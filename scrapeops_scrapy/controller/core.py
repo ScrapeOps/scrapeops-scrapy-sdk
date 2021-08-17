@@ -204,14 +204,14 @@ class SDKCore(SDKModel):
         response_data = SDKAPI.post_request(body={'url':input_url, 'domain': domain}, request_type='domain_data',
                                                                 scrapeops_endpoint=self.scrapeops_endpoint, api_key=self.api_key) 
         
-        if response_data.get('proxy_api'):
+        if response_data.get('proxy_api', False):
             proxy_api_settings = response_data.get('proxy_api_settings')
             self._domains[domain] = proxy_api_settings
 
             true_url = response_data.get('true_url')
             true_domain = DomainProcessor.get_domain(true_url)
             domain_settings = response_data.get('domain_parsing_data')
-            if domain_settings.get('domain') == '': domain_settings['domain'] =  true_domain
+            if domain_settings.get('domain', '') == '': domain_settings['domain'] =  true_domain
             self._domains[true_domain] = domain_settings
             return true_url, domain_settings, proxy_api_settings
 
