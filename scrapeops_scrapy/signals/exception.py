@@ -1,0 +1,1 @@
+scrapeops_exception_recieved = object()
