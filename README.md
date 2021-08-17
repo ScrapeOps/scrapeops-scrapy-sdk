@@ -4,7 +4,7 @@ Most up to date version of the ScrapeOps Scrapy SDK.
 To install you need to install the package by going into the root folder (contains ReadMe) and installing it:
 
 ```
-pip install scrapeops_scrapy
+pip install git+https://github.com/ScrapeOps/scrapeops-scrapy-sdk
 ```
 
 ## Setup the SDK in Scrapy Project
