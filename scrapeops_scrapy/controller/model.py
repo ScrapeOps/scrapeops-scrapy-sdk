@@ -34,6 +34,7 @@ class SDKModel(object):
         self.spider_name = None
         self.spider_settings = None
         self.project_name = None
+        self.bot_name = None
         self.retry_enabled = None
         self.retry_times = None
 
@@ -82,7 +83,8 @@ class SDKModel(object):
             if spider.sops_test.test_active():
                 self._sops_test_id = spider.sops_test.generate_test_id()
         self.get_settings(crawler=crawler, spider=spider)
-        self.project_name = crawler.settings.get('BOT_NAME', 'none')
+        self.project_name = crawler.settings.get('PROJECT', None)
+        self.bot_name = crawler.settings.get('BOT_NAME', None)
         self.retry_enabled = crawler.settings.get('RETRY_ENABLED', None) 
         self.retry_times = crawler.settings.get('RETRY_TIMES', None) 
 
@@ -118,6 +120,7 @@ class SDKModel(object):
             'server_ip': self.server_ip,
             'server_hostname': self.server_hostname,
             'project_name': self.project_name, 
+            'bot_name': self.bot_name, 
             'multi_server': self.multi_server,
             'retry_enabled': self.retry_enabled,
             'retry_times': self.retry_times,
