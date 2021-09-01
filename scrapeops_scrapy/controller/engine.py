@@ -83,10 +83,11 @@ class ScrapeopsCore(SDKCore, StatsCore):
         return False
 
     def close_job(self, spider=None, reason=None):
-        self.period_finish_time = current_time()
-        self.spider_close_stats(reason=reason, crawler=self.crawler)
-        self.send_stats(periodic_stats=self._periodic_stats, overall_stats=self._overall_stats, stats_type='finished', reason=reason)
-        self.close_periodic_monitor()
+        if self.sdk_enabled():
+            self.period_finish_time = current_time()
+            self.spider_close_stats(reason=reason, crawler=self.crawler)
+            self.send_stats(periodic_stats=self._periodic_stats, overall_stats=self._overall_stats, stats_type='finished', reason=reason)
+            self.close_periodic_monitor()
 
     
     def response_stats(self, middleware=None, request=None, response=None):
@@ -96,21 +97,29 @@ class ScrapeopsCore(SDKCore, StatsCore):
         # ## --> include the domain check within this
         # self.domain_check(domain)
         # proxy = self.get_proxy(request=request, domain=domain)
-        domain_data, proxy_data = self.process_domain_proxy(request=request, response=response)
-        self.generate_response_stats(request=request, response=response, proxy=proxy_data, domain=domain_data)
+        #domain_data, proxy_data = self.process_domain_proxy(request=request, response=response)
+        if self.sdk_enabled():
+            domain_data, proxy_data = self.backup_process_domain_proxy(request=request, response=response) 
+            self.generate_response_stats(request=request, response=response, proxy=proxy_data, domain=domain_data)
 
 
     def request_stats(self, request=None):
-        domain_data, proxy_data = self.process_domain_proxy(request=request)
-        self.generate_request_stats(request=request, proxy=proxy_data, domain=domain_data)
+        if self.sdk_enabled():
+            #domain_data, proxy_data = self.process_domain_proxy(request=request)
+            domain_data, proxy_data = self.backup_process_domain_proxy(request=request) 
+            self.generate_request_stats(request=request, proxy=proxy_data, domain=domain_data)
 
     def exception_stats(self, request=None, exception_class=None):
-        domain_data, proxy_data = self.process_domain_proxy(request=request)
-        self.generate_exception_stats(request=request, proxy=proxy_data, domain=domain_data, exception_class=exception_class)
+        if self.sdk_enabled():
+            #domain_data, proxy_data = self.process_domain_proxy(request=request)
+            domain_data, proxy_data = self.backup_process_domain_proxy(request=request) 
+            self.generate_exception_stats(request=request, proxy=proxy_data, domain=domain_data, exception_class=exception_class)
 
     def item_stats(self, signal_type=None, item=None, response=None, spider=None):
-        domain_data, proxy_data = self.process_domain_proxy(request=response.request)
-        self.generate_item_stats(signal=signal_type, response=response, domain=domain_data, proxy=proxy_data)
+        if self.sdk_enabled():
+            domain_data, proxy_data = self.backup_process_domain_proxy(request=response.request) 
+            #domain_data, proxy_data = self.process_domain_proxy(request=response.request)
+            self.generate_item_stats(signal=signal_type, response=response, domain=domain_data, proxy=proxy_data)
  
 
 

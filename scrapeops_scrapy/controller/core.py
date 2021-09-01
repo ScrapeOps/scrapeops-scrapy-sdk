@@ -28,8 +28,6 @@ class SDKCore(SDKModel):
             self.multi_server = data.get('multi_server', False)
             self.period_frequency = data.get('stats_period_frequency')
             self.period_freq_list = data.get('stats_period_freq_list', self.period_freq_list )
-        elif valid_setup == False and self._setup_attempts < 2:
-            self._setup_attempts += 1
         else:
             self.deactivate_sdk(reason='invalid_scrapeops_setup_response', data=data, request_type='setup')
 
@@ -45,8 +43,6 @@ class SDKCore(SDKModel):
             self.multi_server = data.get('multi_server', False)
             self.period_frequency = data.get('stats_period_frequency')
             self.period_freq_list = data.get('stats_period_freq_list', self.period_freq_list )
-        elif valid_setup == False and self._setup_attempts < 3:
-            self._setup_attempts += 1
         else:
             self.deactivate_sdk(reason='invalid_scrapeops_setup_response', data=data, request_type='setup')
     
@@ -61,7 +57,8 @@ class SDKCore(SDKModel):
         post_body = self.stats_data(periodic_stats=periodic_stats, overall_stats=overall_stats, stats_type=stats_type, reason=reason)
 
         if self.job_active() == False:
-            self.send_setup_request()
+            self.deactivate_sdk(reason='no_job_id')
+            #self.send_setup_request()
 
         ## fallback if setup attempt failed
         if self.job_active() == False:
@@ -95,6 +92,16 @@ class SDKCore(SDKModel):
     def update_sdk_settings(self, data):
         self.multi_server = data.get('multi_server', self.multi_server)
 
+    def backup_process_domain_proxy(self, request=None, response=None):
+        proxy = {
+            'proxy_name': 'backup',
+            'proxy_setup': 'none'
+        }
+        domain = {
+            'domain_name': DomainProcessor.get_domain(request.url),
+            'page_type': 'none'
+        }
+        return domain, proxy
 
     def process_domain_proxy(self, request=None, response=None):
         url, domain_settings, proxy_settings, proxy_port = self.get_domain_proxy_data(request=request)
