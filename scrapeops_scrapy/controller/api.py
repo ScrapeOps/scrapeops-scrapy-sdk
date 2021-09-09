@@ -2,29 +2,138 @@ from scrapeops_scrapy.exceptions import ScrapeOpsAPIResponseError
 from scrapeops_scrapy.utils.error_handling import exception_handler
 import requests
 
+    
+class SOPSRequest(object):
 
-class SDKAPI(object):
-    """
-        Where the core ScrapeOps Functionality Goes
-        - send requests to the API
-        - deal with errors
-    """
-
-    SDK_RETRIES = 3
+    TIMEOUT = 5
+    RETRY_LIMIT = 3
+    API_KEY = None
+    JOB_GROUP_ID = None
+    SCRAPEOPS_ENDPOINT = 'https://api.scrapeops.io/'
 
     def __init__(self):
-        pass
+        self.data = None
+        self.valid = None
+        self.action = None
+        self.error = None
         
+    
+    def setup_request(self, body=None):
+        url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/setup/?api_key={SOPSRequest.API_KEY}'
+        data, error = SOPSRequest.post(self, url, body=body)
+        data, self.valid, self.action, self.error = SOPSRequest.setup_stats_validation(data, error)
+        return data, self
+
+
+    def stats_request(self, body=None, log_body=None, files=None):
+        if files is not None:
+           url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/logs/?api_key={SOPSRequest.API_KEY}&log_type=scrapy' 
+           _, _ = SOPSRequest.post_file(self, url, body=log_body, files=files)
+        url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/stats/?api_key={SOPSRequest.API_KEY}'
+        data, error = SOPSRequest.post(self, url, body=body)
+        data, self.valid, self.action, self.error = SOPSRequest.setup_stats_validation(data, error)
+        return data, self
+
+
+    def error_report_request(self, error_type=None, body=None, files=None):
+        if files is None:
+            url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/errors/?api_key={SOPSRequest.API_KEY}&error_type={error_type}'
+        else:
+            url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/errors/logs/?api_key={SOPSRequest.API_KEY}&error_type={error_type}'
+        data, error = SOPSRequest.post_file(self, url, body=body, files=files)
+        data, self.valid, self.action, self.error = SOPSRequest.error_report_validation(data, error)
+        return data, self
+    
+
+    def proxy_normalisation_request(self, request_response_object):
+        proxy_name = request_response_object.get_proxy_name()
+        proxy_string = request_response_object.get_raw_proxy()
+        url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/normalizer/proxy/?api_key={SOPSRequest.API_KEY}&proxy_name={proxy_name}'
+        data, error = SOPSRequest.post(self, url, body={'proxy_string': proxy_string})
+        data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='proxy')
+        return data, self
+
+
+    def proxy_api_normalisation_request(self, request_response_object):
+        proxy_name = request_response_object.get_proxy_api_name()
+        url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/normalizer/proxy_api/?api_key={SOPSRequest.API_KEY}&proxy_name={proxy_name}'
+        data, error = SOPSRequest.get(self, url)
+        data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='proxy')
+        return data, self
+
+
+    def domain_normalisation_request(self, request_response_object):
+        domain = request_response_object.get_domain()
+        real_url = request_response_object.get_real_url()
+        url = SOPSRequest.SCRAPEOPS_ENDPOINT + f'api/v1/normalizer/domain/?api_key={SOPSRequest.API_KEY}&domain={domain}'
+        data, error = SOPSRequest.post(self, url, body={'url': real_url})
+        data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='domain')
+        return data, self
+
+
     @staticmethod
-    @exception_handler
-    def post_request(body=None, request_type=None, scrapeops_endpoint=None, api_key=None):
-        url = SDKAPI.get_scrapeops_url(request_type, scrapeops_endpoint, api_key)
-        for _ in range(SDKAPI.SDK_RETRIES):
+    def setup_stats_validation(data, error):
+        if data is None:
+            return data, False, 'retry', str(error)
+        elif data.get('api_key') == 'invalid':
+            return data, False, 'close', 'invalid_api_key'
+        elif data.get('job_valid') is not True and data.get('job_id') is None:
+            return data, False, 'retry', 'invalid_job'
+        return data, True, 'valid', None
+
+
+    @staticmethod
+    def normaliser_validation(data, error, request_type=None):
+        if data is None:
+            return data, False, 'fallback', str(error)
+        elif data.get('api_key') == 'invalid':
+            return data, False, 'close', 'invalid_api_key'
+        
+        ## proxy specific
+        elif request_type=='proxy' and data.get('proxy_parsing_data') is None:
+            return data, False, 'fallback', 'no_proxy_parsing_data'
+        elif request_type=='proxy' and data.get('proxy_parsing_data') is not None:
+            proxy_parsing_data = data.get('proxy_parsing_data')
+            if proxy_parsing_data.get('known_proxy') is False:
+                return data, False, 'fallback', 'unknown_proxy'
+        
+        ## domain specific
+        elif request_type=='domain' and data.get('domain_parsing_data') is None:
+            return data, False, 'fallback', 'no_domain_parsing_data'
+        elif request_type=='domain' and data.get('domain_parsing_data') is not None:
+            domain_parsing_data = data.get('domain_parsing_data')
+            if domain_parsing_data.get('known_domain') is False:
+                return data, False, 'fallback', 'unknown_domain'
+        
+        ## valid response
+        return data, True, 'valid', None
+
+    
+    @staticmethod
+    def error_report_validation(data, error):
+        if data is None:
+            return data, False, 'retry', str(error)
+        elif data.get('api_key') == 'invalid':
+            return data, False, 'close', 'invalid_api_key'
+        return data, True, 'valid', None
+
+    @staticmethod
+    def condense_stats_body(body):
+        return {
+            'job_id': body.get('job_id'),
+            'job_group_id': body.get('job_group_id'),
+        }
+
+    @staticmethod
+    def get(self, url):
+        for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
-                response = requests.post(url, json=body) 
+                response = requests.get(url, timeout=SOPSRequest.TIMEOUT) 
+                if response.status_code == 403:
+                    return None, False, 'close', 'invalid_api_key'
                 if response.status_code == 200:
                     data = response.json()
-                    return data
+                    return data, None
                 else:
                     raise ScrapeOpsAPIResponseError
             except requests.exceptions.ConnectionError as e:
@@ -36,45 +145,64 @@ class SDKAPI(object):
             except Exception as e:
                 error = e
                 continue
-        raise error
-    
-    @staticmethod
-    def get_scrapeops_url(request_type, scrapeops_endpoint, api_key):
-        if request_type == 'setup':
-            return scrapeops_endpoint + 'api/v1/setup/'
-        elif request_type in ['periodic', 'finished']:
-            return scrapeops_endpoint + f'api/v1/stats/?api_key={api_key}'
-        elif request_type == 'error_report':
-            return scrapeops_endpoint + 'api/v1/error/'
-        elif request_type == 'proxy_data':
-            return scrapeops_endpoint + f'api/v1/normalise/proxy?api_key={api_key}'
-        elif request_type == 'domain_data':
-            return scrapeops_endpoint + f'api/v1/normalise/domain?api_key={api_key}'
-        elif request_type == 'normalise':
-            return scrapeops_endpoint + f'api/v1/normalise?api_key={api_key}'
-    
-        
-    @staticmethod
-    def validate_scrapeops_response(data, request_type):
-        if data is None:
-            return False
-        job_valid = data.get('job_valid', False)
-        job_id = data.get('job_id', None)
-        stats_period_frequency = data.get('stats_period_frequency', None)
+        return None, str(error)
 
-        if request_type == 'setup':
-            if job_valid == True and job_id != None and stats_period_frequency != None: 
-                return True
-            return False
-                
-        if request_type in ['periodic', 'finished']:
-            if job_valid == True and job_id != None: 
-                return True
-            return False
-                
-        return False
+
+    @staticmethod
+    def post(self, url, body=None, files=None):
+        for _ in range(SOPSRequest.RETRY_LIMIT):
+            try:
+                response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files) 
+                if response.status_code == 403:
+                    return None, False, 'close', 'invalid_api_key'
+                if response.status_code == 200:
+                    data = response.json()
+                    return data, None
+                else:
+                    raise ScrapeOpsAPIResponseError
+            except requests.exceptions.ConnectionError as e:
+                error = e
+                continue
+            except ScrapeOpsAPIResponseError as e:
+                error = e
+                continue
+            except Exception as e:
+                error = e
+                continue
+        return None, str(error)
+
+
+    @staticmethod
+    def post_file(self, url, body=None, files=None):
+        for _ in range(SOPSRequest.RETRY_LIMIT):
+            try:
+                response = requests.post(url, data=body, timeout=SOPSRequest.TIMEOUT, files=files) 
+                if response.status_code == 403:
+                    return None, False, 'close', 'invalid_api_key'
+                if response.status_code == 200:
+                    data = response.json()
+                    return data, None
+                else:
+                    raise ScrapeOpsAPIResponseError
+            except requests.exceptions.ConnectionError as e:
+                error = e
+                continue
+            except ScrapeOpsAPIResponseError as e:
+                error = e
+                continue
+            except Exception as e:
+                error = e
+                continue
+        return None, str(error)
+    
+    
+
 
     
+
+
+
+
 
 
     

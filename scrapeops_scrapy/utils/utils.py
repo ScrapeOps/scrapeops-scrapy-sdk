@@ -1,11 +1,17 @@
 import time
 import sys
+import sys
+import scrapy
+import scrapeops_scrapy
+import platform
+
+from scrapeops_scrapy.utils.error_handling import exception_handler
 
 def current_time():
     t = time.time()
     return int(round(t, 0))
 
-
+@exception_handler
 def get_args():
     arg_dict = {'raw_string': '', 'args': [], 'options': []}
     if sys.argv[0] == 'crawl' or sys.argv[0]  == 'runspider': 
@@ -23,7 +29,31 @@ def get_args():
                 arg_dict['args'].append(arg)
     return arg_dict
 
+@exception_handler
+def scrapeops_middleware_installed(spider_settings):
+    downloader_middlerwares = spider_settings.get('DOWNLOADER_MIDDLEWARES', {})
+    scrapeops_stats = downloader_middlerwares.get('scrapeops_scrapy.middleware.stats.ScrapeOpsStats', None)
+    if scrapeops_stats is not None:
+        return True
+    return False
 
+@exception_handler
+def get_python_version():
+    verions_string = sys.version
+    split_string = verions_string.split(' ')
+    return split_string[0]
+
+@exception_handler
+def get_scrapy_version():
+    return scrapy.__version__
+
+@exception_handler
+def get_scrapeops_version():
+    return scrapeops_scrapy.__version__
+
+@exception_handler
+def get_system_version():
+    return platform.platform()
 
 def append_raw_string(arg):
     if ' ' in arg:

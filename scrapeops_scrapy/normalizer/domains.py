@@ -1,7 +1,7 @@
 from tld import get_tld
 from urllib.parse import urlparse, parse_qs
 
-class DomainProcessor(object):
+class DomainNormalizer(object):
 
     def __init__(self):
         pass
@@ -9,7 +9,7 @@ class DomainProcessor(object):
     @staticmethod
     def get_domain(url):
         try:
-            if DomainProcessor.if_localhost(url):
+            if DomainNormalizer.if_localhost(url):
                 return 'localhost'
             res = get_tld(url, as_object=True)
             return res.fld
@@ -19,7 +19,7 @@ class DomainProcessor(object):
     @staticmethod
     def get_full_domain(url):
         try:
-            if DomainProcessor.if_localhost(url):
+            if DomainNormalizer.if_localhost(url):
                 return 'localhost'
             res = get_tld(url, as_object=True)
             if res.subdomain != '':
@@ -49,22 +49,9 @@ class DomainProcessor(object):
     @staticmethod
     def get_url_proxy_api(url=None, proxy_settings=None):
         url_identifier = proxy_settings.get('url_identifier')
-        query_params = DomainProcessor.parse_url(url)
+        query_params = DomainNormalizer.parse_url(url)
         url = query_params.get(url_identifier)
         return url
-
-    @staticmethod
-    def normalise_request(url, domain_data=None):
-        if domain_data.get('domain', None) is None:
-            return {
-            'domain_name': DomainProcessor.get_domain(url),
-            'page_type': DomainProcessor.get_page_type(url, domain_data)
-        }
-
-        return {
-            'domain_name': domain_data.get('domain', 'no_domain'),
-            'page_type': DomainProcessor.get_page_type(url, domain_data)
-        }
 
     
     @staticmethod
@@ -74,10 +61,13 @@ class DomainProcessor(object):
             for k, v in url_classifiers.items():
                 if k in url:
                     return v
-        return 'none'
-
-    
-
+            query_param_page_types = domain_data.get('query_param_page_types', {})
+            query_params = DomainNormalizer.parse_url(url)
+            for k, v in query_params.items():
+                key_mapping = query_param_page_types.get(k, None)
+                if key_mapping is not None:
+                    return v
+        return 'none'    
     
  
 

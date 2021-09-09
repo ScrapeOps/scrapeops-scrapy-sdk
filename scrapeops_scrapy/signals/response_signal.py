@@ -1,1 +1,0 @@
-scrapeops_response_recieved = object()
