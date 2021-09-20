@@ -15,7 +15,7 @@ class ScrapeOpsTest:
         return self.test_id 
 
     def generate_test_id(self):
-        response = requests.post('http://localhost:3000/api/v1/start_test?api_key=1234&sdk_type=scrapy')
+        response = requests.post('https://api.scrapeops.io/api/v1/start_test?api_key=1234&sdk_type=scrapy')
         data = response.json()
         self.test_id = data.get('test_id', None)
         return self.test_id

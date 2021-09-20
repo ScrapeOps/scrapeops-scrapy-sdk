@@ -1,4 +1,4 @@
-class ExceptionProcessor(object):
+class ExceptionNormalizer(object):
 
     def __init__(self):
         pass

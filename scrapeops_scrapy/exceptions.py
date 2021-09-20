@@ -2,8 +2,12 @@
 
 class ScrapeOpsMissingAPIKey(Exception):
     """Indicates that no ScrapeOps API key added"""
-
-    pass
+    def __init__(self):
+        self.message = 'No ScrapeOps API key defined.'
+        super().__init__(self.message)
+    
+    def __str__(self):
+        return f'ScrapeOpsMissingAPIKey: {self.message}'
 
 
 class ScrapeOpsAPIResponseError(Exception):
