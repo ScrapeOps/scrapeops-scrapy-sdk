@@ -18,7 +18,6 @@ setup(name='scrapeops_scrapy',
           "requests==2.24.0",
           "json5==0.9.5",
           "urllib3==1.25.10",
-          "uuid==1.30",
           ],
       classifiers=[
         "Programming Language :: Python",
