@@ -36,7 +36,7 @@ class SDKCore(SDKModel):
 
 
     def send_stats(self, periodic_stats=None, overall_stats=None, reason=None, stats_type=None):
-        self._sdk_run_time = self._sdk_run_time + self._period_frequency ## _period_frequency ???
+        self._sdk_run_time = self._sdk_run_time + self._period_frequency 
         post_body = self.stats_data(periodic_stats=periodic_stats, overall_stats=overall_stats, stats_type=stats_type, reason=reason)
 
         if self.job_active() is False:
@@ -58,7 +58,7 @@ class SDKCore(SDKModel):
                 data, status = SOPSRequest().stats_request(body=post_body) 
             
             if status.valid:
-                self.update_sdk_settings(data)
+                self.update_sdk_settings(data) 
                 self.reset_failed_stats()
             elif status.action == 'retry' and self.failed_periods < 3:
                 self.failed_periods += 1
@@ -85,8 +85,13 @@ class SDKCore(SDKModel):
 
     def sdk_enabled(self):
         if self._sdk_active:
+            self.enabled_check()
             return True
         return False
+
+    
+    def enabled_check(self):
+        self.initialize_request_response_middleware()
 
     def deactivate_sdk(self, reason=None, error=None, request_type=None, data=None):
         self._sdk_active = False
@@ -105,8 +110,9 @@ class SDKCore(SDKModel):
         self.cached_failed_stats = []
         self.failed_periods = 0
 
-    def update_sdk_settings(self, data):
-        self.multi_server = data.get('multi_server', self.multi_server)
+     
+
+
 
 
 

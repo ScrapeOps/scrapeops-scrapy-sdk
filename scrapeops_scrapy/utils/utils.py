@@ -29,11 +29,12 @@ def get_args():
                 arg_dict['args'].append(arg)
     return arg_dict
 
-@exception_handler
+
 def scrapeops_middleware_installed(spider_settings):
     downloader_middlerwares = spider_settings.get('DOWNLOADER_MIDDLEWARES', {})
-    scrapeops_stats = downloader_middlerwares.get('scrapeops_scrapy.middleware.stats.ScrapeOpsStats', None)
-    if scrapeops_stats is not None:
+    if downloader_middlerwares.get('scrapeops_scrapy.middleware.stats.ScrapeOpsStats') is not None:
+        return True
+    if downloader_middlerwares.get('scrapeops_scrapy.middleware.retry.RetryMiddleware') is not None:
         return True
     return False
 

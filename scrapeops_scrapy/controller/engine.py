@@ -41,7 +41,7 @@ class ScrapeopsCore(SDKCore, StatsCore):
     def response_stats(self, request=None, response=None):
         if self.sdk_enabled():
             request_response_object = RequestResponse(request=request, response=response)
-            self.request_response_middleware.normalise_domain_proxy_data(request_response_object)
+            self.request_response_middleware.process(request_response_object, response) 
             self.generate_response_stats(request_response_object, request=request, response=response)
 
     def request_stats(self, request=None):
@@ -59,7 +59,7 @@ class ScrapeopsCore(SDKCore, StatsCore):
     def item_stats(self, signal_type=None, item=None, response=None, spider=None):
         if self.sdk_enabled():
             request_response_object = RequestResponse(response=response)
-            self.request_response_middleware.normalise_domain_proxy_data(request_response_object)
+            self.request_response_middleware.process(request_response_object, response) 
             self.generate_item_stats(request_response_object, signal=signal_type, response=response)
 
 
@@ -97,7 +97,7 @@ class ScrapeopsCore(SDKCore, StatsCore):
     def get_periodic_frequency(self):
         self.period_count = 0
         runtime = self.get_runtime()
-        if len(self._period_freq_list) == 0:
+        if self._period_freq_list is None:
             self.period_count = int(runtime//self._period_frequency)
             return self._period_frequency
         for index, row in enumerate(self._period_freq_list):
@@ -115,7 +115,7 @@ class ScrapeopsCore(SDKCore, StatsCore):
                     diff = runtime - int(self._period_freq_list[index - 1].get('total_time'))
                 self.period_count += int(diff//self._period_frequency)
                 return self._period_frequency 
-        return self._period_freq_list.get('periodic_frequency') or self._period_frequency
+        return self._period_frequency
 
     
 

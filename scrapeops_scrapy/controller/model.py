@@ -1,11 +1,11 @@
-import uuid
+##import uuid
 import socket
 import scrapy.settings.default_settings as default_settings
 from scrapeops_scrapy.utils import utils
 from scrapeops_scrapy.controller.error_logger import ErrorLogger
-from scrapeops_scrapy.utils.error_handling import exception_handler
 from scrapeops_scrapy.controller.api import SOPSRequest
 from scrapeops_scrapy.normalizer.middleware import RequestResponseMiddleware
+from scrapeops_scrapy.utils.error_handling import exception_handler
 
 class SDKModel(object):
 
@@ -24,8 +24,8 @@ class SDKModel(object):
         self._scrapeops_middleware = None
         self._scrapeops_settings_exclusion_list = []
         self._scrapeops_export_scrapy_logs = False
-        self._period_frequency = 30 ## default is 30s
-        self._period_freq_list = []
+        self._period_frequency = 60 
+        self._period_freq_list = None
         self._sdk_run_time = 0
         self._sdk_retries = 3 ## --> not used
         self._setup_attempts = 0
@@ -53,8 +53,7 @@ class SDKModel(object):
         self.finish_time = None
         self.server_hostname = None
         self.server_ip = None
-        self._domains = {}
-        self._proxies = {}
+        self._proxy_apis  = {}
         self._generic_validators = {}
         self.multi_server = False
         self.failed_urls = []
@@ -100,26 +99,25 @@ class SDKModel(object):
         ## Job Data
         self.job_args = utils.get_args()
         self.job_group_name = crawler.settings.get('SCRAPEOPS_JOB_NAME', self.get_job_name())
-        self.job_group_type = crawler.settings.get('SCRAPEOPS_JOB_GROUP_TYPE', 'user_triggered')
         self.job_group_uuid = crawler.settings.get('SCRAPEOPS_JOB_GROUP_IDENTIFIER', self.get_uuid()) ## Multi-server
         self.job_group_version = crawler.settings.get('SCRAPEOPS_JOB_VERSION', self.get_job_version())
 
         ## SDK Setup Data
+        self.check_spider_attributes(spider)
+        self.get_settings(spider)
         self._scrapeops_api_key = SOPSRequest.API_KEY = crawler.settings.get('SCRAPEOPS_API_KEY', None)
-        self._scrapeops_endpoint = SOPSRequest.SCRAPEOPS_ENDPOINT = crawler.settings.get('SCRAPOPS_ENDPOINT', 'https://api.scrapeops.io/')
+        self._scrapeops_endpoint = SOPSRequest.SCRAPEOPS_ENDPOINT = crawler.settings.get('SCRAPEOPS_ENDPOINT', 'https://api.scrapeops.io/')
         self._scrapeops_middleware = utils.scrapeops_middleware_installed(self.spider_settings)
         self._scrapeops_job_start = crawler.settings.get('SCRAPEOPS_JOB_START', utils.current_time()) ## Multi-server
         self._scrapeops_server_id = crawler.settings.get('SCRAPEOPS_SERVER_ID', "-1")
         self._scrapeops_debug_mode = crawler.settings.get('SCRAPEOPS_DEBUG_MODE', False)
         self._scrapeops_settings_exclusion_list = crawler.settings.get('SCRAPEOPS_SETTINGS_EXLUSION_LIST', [])
         self._scrapeops_export_scrapy_logs = self.get_export_logs(crawler) 
-        self.check_spider_attributes(spider)
-        self.initialize_error_logger()
-        self.get_settings(spider)
         self.get_server_details()
+        self.check_scrapeops_triggered_job(crawler)
+        self.initialize_error_logger()
 
     
-
 
     def initialize_job_details(self, data):
         self.job_id = data.get('job_id')
@@ -127,12 +125,33 @@ class SDKModel(object):
         self.job_group_id = SOPSRequest.JOB_GROUP_ID = data.get('job_group_id')
         self.multi_server = data.get('multi_server', False)
         self._period_frequency = data.get('stats_period_frequency')
-        self._period_freq_list = data.get('stats_period_freq_list', self._period_freq_list )
+        self._period_freq_list = data.get('stats_period_freq_list')
+        self._proxy_apis = data.get('proxy_apis', {})
+        self._generic_validators = data.get('generic_validators', [])
         self._error_logger.update_error_logger(self.job_group_name, self.job_group_id)
+        self.update_sdk_settings(data)
+        self.initialize_request_response_middleware()
+        
 
-        ## middlewares
-        self.request_response_middleware = RequestResponseMiddleware(data.get('proxy_apis', {}), self._error_logger)
+    def initialize_request_response_middleware(self):
+        if self.request_response_middleware is None:
+            self.request_response_middleware = RequestResponseMiddleware(self.job_group_id, 
+                                                                            self._proxy_apis, 
+                                                                            self._generic_validators, 
+                                                                            self._error_logger)
     
+
+    def update_sdk_settings(self, data):
+        self._sdk_active = data.get('sdk_active', self._sdk_active) 
+        self.multi_server = data.get('multi_server', self.multi_server)
+        self._scrapeops_export_scrapy_logs = data.get('scrapeops_export_scrapy_logs', self._scrapeops_export_scrapy_logs) 
+        SOPSRequest.SCRAPEOPS_ENDPOINT = data.get('scrapeops_endpoint', SOPSRequest.SCRAPEOPS_ENDPOINT) 
+        SOPSRequest.SCRAPEOPS_API_VERSION = data.get('scrapeops_api_version', SOPSRequest.SCRAPEOPS_API_VERSION) 
+        RequestResponseMiddleware.PROXY_DOMAIN_NORMALIZATION = data.get('proxy_domain_normalization', RequestResponseMiddleware.PROXY_DOMAIN_NORMALIZATION) 
+        RequestResponseMiddleware.PROXY_ALERTS = data.get('proxy_alerts', RequestResponseMiddleware.PROXY_ALERTS)
+        RequestResponseMiddleware.RESPONSE_VALIDATION = data.get('response_validation', RequestResponseMiddleware.RESPONSE_VALIDATION)
+        ErrorLogger.ERROR_LOGGER_ACTIVE = data.get('error_logger', ErrorLogger.ERROR_LOGGER_ACTIVE)
+
 
     def initialize_error_logger(self):
         self._error_logger = ErrorLogger(
@@ -162,7 +181,7 @@ class SDKModel(object):
                 self.spider_settings[key] = value
 
     def include_setting(self, key):
-        exclusion_terms = ['API_KEY', 'APIKEY']
+        exclusion_terms = ['API_KEY', 'APIKEY', 'SECRET_KEY', 'SECRETKEY']
         if key in self._scrapeops_settings_exclusion_list:
             return False
         for term in exclusion_terms:
@@ -255,10 +274,22 @@ class SDKModel(object):
             return True
         return False
 
+    # @exception_handler
+    # def get_uuid(self):
+    #     self.multi_server = False
+    #     return str(uuid.uuid4())
+
     @exception_handler
     def get_uuid(self):
+        for arg in self.job_args.get('args'):
+            if 'SCRAPEOPS_JOB_GROUP_IDENTIFIER' in arg:
+                return arg.split('=')[1]
+        if hasattr(self.spider, 'sops_job_group_identifier'):
+            return self.spider.sops_job_group_identifier
         self.multi_server = False
-        return str(uuid.uuid4())
+        return ''
+
+        
 
     
     def get_job_name(self):
@@ -274,6 +305,8 @@ class SDKModel(object):
             return self.spider.name
         return 'no_spider_name'
 
+
+    
 
     def get_job_version(self):
         ## check args
@@ -303,6 +336,23 @@ class SDKModel(object):
         if self._scrapeops_export_scrapy_logs and self.log_file is not None:
             return True
         return False
+
+    
+    def get_server_id(self, crawler):
+        for arg in self.job_args.get('args'):
+            if 'SCRAPEOPS_SERVER_ID' in arg:
+                return arg.split('=')[1]
+        if crawler.settings.get('SCRAPEOPS_SERVER_ID') is not None:
+            return crawler.settings.get('SCRAPEOPS_SERVER_ID')
+        return '-1'
+
+    
+    def check_scrapeops_triggered_job(self, crawler):
+        self._scrapeops_server_id = self.get_server_id(crawler)
+        if self._scrapeops_server_id != '-1':
+            self.job_group_type = 'scrapeops_triggered'
+        else:
+            self.job_group_type = 'user_triggered'
     
 
 

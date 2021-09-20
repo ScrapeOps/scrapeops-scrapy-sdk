@@ -51,17 +51,18 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         proxy_setup = request_response_object.get_proxy_setup()
         domain_name = request_response_object.get_domain()
         page_type = request_response_object.get_page_type()
+        custom_tag = request_response_object.get_custom_tag()
         reqlen = len(request_httprepr(request))
         
         ## periodic stats
         self.check_periodic_stats()
-        self.inc_value(self._periodic_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|count')
-        self.inc_value(self._periodic_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|bytes', count=reqlen)
+        self.inc_value(self._periodic_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{custom_tag}|count')
+        self.inc_value(self._periodic_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{custom_tag}|bytes', count=reqlen)
 
         ## overall stats
         self.inc_value(self._overall_stats, f'requests|{request.method}|count')
-        self.inc_value(self._overall_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|count')
-        self.inc_value(self._overall_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|bytes', count=reqlen)
+        self.inc_value(self._overall_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{custom_tag}|count')
+        self.inc_value(self._overall_stats, f'requests|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{custom_tag}|bytes', count=reqlen)
 
 
     def generate_response_stats(self, request_response_object, request=None, response=None):
@@ -69,26 +70,52 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         proxy_setup = request_response_object.get_proxy_setup()
         domain_name = request_response_object.get_domain()
         page_type = request_response_object.get_page_type()
+        validation = request_response_object.get_validation_test()
+        geo = request_response_object.get_geo()
+        custom_tag = request_response_object.get_custom_tag()
+        custom_signal = 'none'
         reslen = len(response_httprepr(response))
         total_latency = request.meta.get('_total_latency', 0) + request.meta['download_latency']
 
         ## periodic stats
         self.check_periodic_stats()
-        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|count')
-        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|bytes', count=reslen)
-        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|retries', count=request.meta.get('retry_times', 0))
-        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|total_latency', count=total_latency)
-        self.min_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|min_latency', total_latency)
-        self.max_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|max_latency', total_latency)
+        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
+        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|bytes', count=reslen)
+        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|retries', count=request.meta.get('retry_times', 0))
+        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|total_latency', count=total_latency)
+        self.min_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|min_latency', total_latency)
+        self.max_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|max_latency', total_latency)
 
         ## overall stats
-        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|count')
-        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|bytes', count=reslen)
-        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|retries', count=request.meta.get('retry_times', 0))
-        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|total_latency', count=total_latency)
-        self.min_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|min_latency', total_latency)
-        self.max_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|max_latency', total_latency)
+        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
+        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|bytes', count=reslen)
+        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|retries', count=request.meta.get('retry_times', 0))
+        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|total_latency', count=total_latency)
+        self.min_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|min_latency', total_latency)
+        self.max_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|max_latency', total_latency)
+
+
+        # ## periodic stats
+        # self.check_periodic_stats()
+        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|count')
+        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|bytes', count=reslen)
+        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|retries', count=request.meta.get('retry_times', 0))
+        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|total_latency', count=total_latency)
+        # self.min_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|min_latency', total_latency)
+        # self.max_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|max_latency', total_latency)
+
+        # ## overall stats
+        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|count')
+        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|bytes', count=reslen)
+        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|retries', count=request.meta.get('retry_times', 0))
+        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|total_latency', count=total_latency)
+        # self.min_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|min_latency', total_latency)
+        # self.max_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|max_latency', total_latency)
+
+
         
+        ## captcha[1]_cloudflare_geo
+        #self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
         
     def generate_item_stats(self, request_response_object, signal=None, response=None, domain=None, proxy=None):
         request = response.request
@@ -96,19 +123,36 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         proxy_setup = request_response_object.get_proxy_setup()
         domain_name = request_response_object.get_domain()
         page_type = request_response_object.get_page_type()
+        validation = request_response_object.get_validation_test()
+        geo = request_response_object.get_geo()
+        custom_tag = request_response_object.get_custom_tag()
+        custom_signal = 'none'
         self.check_periodic_stats()
 
         if signal == 'item_scraped':
-            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items')
-            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items')
+            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items')
+            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items')
         
         elif signal == 'item_dropped':
-            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items_dropped')
-            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items_dropped')
+            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items_dropped')
+            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items_dropped')
         
         elif signal == 'item_error':
-            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|item_errors')
-            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|item_errors')
+            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
+            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
+
+        
+        # if signal == 'item_scraped':
+        #     self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items')
+        #     self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items')
+        
+        # elif signal == 'item_dropped':
+        #     self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items_dropped')
+        #     self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items_dropped')
+        
+        # elif signal == 'item_error':
+        #     self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|item_errors')
+        #     self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|item_errors')
     
 
     def generate_exception_stats(self, request_response_object, request=None, exception_class=None):
@@ -116,11 +160,15 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         proxy_setup = request_response_object.get_proxy_setup()
         domain_name = request_response_object.get_domain()
         page_type = request_response_object.get_page_type()
+        validation = request_response_object.get_validation_test()
+        geo = request_response_object.get_geo()
+        custom_tag = request_response_object.get_custom_tag()
+        custom_signal = 'none'
         exception_type = ExceptionNormalizer.normalise_exception(exception_class)
 
         self.check_periodic_stats()
-        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{domain_name}|{exception_type}|count')
-        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|count')
+        self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
+        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
 
     
     def aggregate_stats(self, crawler):

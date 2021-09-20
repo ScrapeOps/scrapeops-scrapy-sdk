@@ -20,9 +20,17 @@ class RequestResponse(object):
         self._ip_proxy_list = False
         self._named_proxy = False
 
+        ## Proxy Port
+        self._proxy_port_name = None
+
         ## Proxy API
         self._proxy_api = False
         self._proxy_api_name = None
+
+        ## Validation
+        self._validation_test = None
+        self._geo = None
+        self._custom_tag = None 
 
         ## Final
         self._domain = None
@@ -51,11 +59,23 @@ class RequestResponse(object):
     def get_proxy_api_name(self):
         return self._proxy_api_name
 
+    def get_proxy_port_name(self):
+        return self._proxy_port_name
+
     def get_raw_proxy(self):
         return self.raw_proxy_port
 
     def get_real_url(self):
         return self._real_url
+
+    def get_validation_test(self):
+        return self._validation_test or 'pass'
+
+    def get_geo(self):
+        return self._geo or 'none'
+
+    def get_custom_tag(self):
+        return self._custom_tag or 'none'
 
         
     """
@@ -67,6 +87,13 @@ class RequestResponse(object):
     
     def active_proxy_port(self):
         return True if self._active_porxy_port else False
+
+    def active_proxy_api(self):
+        return self._proxy_api
+
+    def active_named_proxy(self):
+        return self._named_proxy
+        
 
 
     """
@@ -88,7 +115,8 @@ class RequestResponse(object):
 
 
     def update_page_type(self, domain_details):
-        self._page_type = DomainNormalizer.get_page_type(self._real_url, domain_data=domain_details)
+        if domain_details is not None:
+            self._page_type = DomainNormalizer.get_page_type(self._real_url, domain_data=domain_details)
 
 
     def fallback_domain_data(self):
@@ -113,14 +141,14 @@ class RequestResponse(object):
             self._proxy_setup = 'ip_address'
             return False, False
         
-        self._named_proxy, self._proxy_name = ProxyNormalizer.check_named_proxy(self.raw_proxy_port) 
+        self._named_proxy, self._proxy_port_name = ProxyNormalizer.check_named_proxy(self.raw_proxy_port) 
         if self._named_proxy:
             self._proxy_type = 'named_proxy_port'
             self._real_url = self.raw_url
             self._domain = self.raw_domain
 
-            if proxy_ports.get(self._proxy_name) is not None:
-                proxy_details = proxy_ports.get(self._proxy_name)
+            if proxy_ports.get(self._proxy_port_name) is not None:
+                proxy_details = proxy_ports.get(self._proxy_port_name)
                 self._proxy_name = proxy_details.get('proxy_name')
                 self._proxy_setup = self.proxy_port_setup(proxy_details)
 
@@ -128,7 +156,6 @@ class RequestResponse(object):
 
             ## get proxy details
             return True, True
-
 
     def check_proxy_api(self, proxy_apis):
         """
@@ -165,7 +192,7 @@ class RequestResponse(object):
         self._active_proxy = True
         self._proxy_api = True
         self._proxy_type = 'proxy_api'
-        self._proxy_name = proxy_details.get('proxy_name')
+        self._proxy_name = self._proxy_api_name = proxy_details.get('proxy_name')
         self._proxy_setup = self.proxy_api_setup(proxy_details) ## into new file
 
 
@@ -225,14 +252,28 @@ class RequestResponse(object):
             self._proxy_setup = 'fallback' if self._proxy_setup is None else self._proxy_setup
 
     
-    def fallback_domain_proxy_details(self):
+    def fallback_domain_proxy_details(self, reason='fallback'):
         """
             Fallback -> if issue with domain/proxy normalising
         """
         self._domain = DomainNormalizer.get_domain(self.raw_url)
-        self._page_type = 'fallback'
-        self._proxy_name = 'fallback' 
-        self._proxy_setup = 'fallback'
+        self._page_type = 'none'
+        self._proxy_name = reason
+        self._proxy_setup = 'none'
+
+    
+    """
+        Response Validation Tests
+    """
+
+    def failed_validation_test(self, test):
+        if self._validation_test is None:
+            self._validation_test = test.get('validation_msg', 'failed')
+        else:
+            self._validation_test = self._validation_test + '&&' + test.get('validation_msg', 'failed')
+        if test.get('validation_test_id', -1) != -1:
+          self._validation_test = self._validation_test + f'-[{test.get("validation_test_id")}]'   
+
 
     def print_request_details(self):
         print('self._real_url', self._real_url)
