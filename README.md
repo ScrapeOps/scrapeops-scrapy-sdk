@@ -20,11 +20,12 @@ EXTENSIONS = {
 ```
 
 #### #2 Enable the ScrapeOps stats middleware:
-Add in the ScrapeOps stats middleware into the `DOWNLOADER_MIDDLEWARES` dictionary:
+To get the most accurate stats, you need to add in the ScrapeOps retry middleware into the `DOWNLOADER_MIDDLEWARES` dictionary and disable the default Scrapy Retry middleware:
 
 ```python
 DOWNLOADER_MIDDLEWARES = {
-    'scrapeops.middleware.stats.ScrapeOpsStats': 840,
+    'scrapeops_scrapy.middleware.retry.RetryMiddleware': 550,
+    'scrapy.downloadermiddlewares.retry.RetryMiddleware': None,
 }
 ```
 
@@ -33,6 +34,23 @@ Set your ScrapeOps API key so your logs can be linked to your account:
 
 ```python
 SCRAPEOPS_API_KEY = 'YOUR_API_KEY'
+```
+
+
+#### #4 Exclude Settings From Being Logged By ScrapeOps SDK:
+The ScrapeOps SDK will log the settings used for each particular scrape. It won't log any settings that contain the following substrings:
+
+- `API_KEY`
+- `APIKEY`
+- `SECRET_KEY`
+- `SECRETKEY`
+
+However, it can still log other settings that don't match these patterns. You can specify which settings not to log by adding the setting to the `SCRAPEOPS_SETTINGS_EXCLUSION_LIST`. 
+
+```python
+SCRAPEOPS_SETTINGS_EXCLUSION_LIST = [
+    'NAME_OF_SETTING_NOT_TO_LOG'
+]
 ```
 
 

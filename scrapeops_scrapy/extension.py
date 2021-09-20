@@ -1,8 +1,6 @@
 from scrapy import signals
 
 from scrapeops_scrapy.controller.engine import ScrapeopsCore 
-from scrapeops_scrapy.signals.response_signal import scrapeops_response_recieved
-from scrapeops_scrapy.signals.exception import scrapeops_exception_recieved
 from scrapeops_scrapy.signals import scrapeops_signals
 
 
@@ -32,10 +30,10 @@ class ScrapeOpsMonitor(ScrapeopsCore):
                                 signal=signals.item_scraped)
 
         crawler.signals.connect(ext.log_response_middleware, 
-                                signal=scrapeops_response_recieved)
+                                signal=scrapeops_signals.scrapeops_response_recieved)
 
         crawler.signals.connect(ext.log_exception, 
-                                signal=scrapeops_exception_recieved)
+                                signal=scrapeops_signals.scrapeops_exception_recieved)
 
         crawler.signals.connect(ext.response_rejected, 
                                 signal=scrapeops_signals.scrapeops_response_rejected)
@@ -44,24 +42,21 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         return ext
 
     def spider_opened(self, spider):
-        self.start_job(spider=spider, crawler=self.crawler)
+        self.start_sdk(spider=spider, crawler=self.crawler)
 
     def spider_closed(self, spider, reason):
-        self.close_job(spider=spider, reason=reason)
-        if self.debug_mode and self.sdk_enabled():
-            self.display_stats()
+        self.close_sdk(spider=spider, reason=reason)
 
     def log_request(self, request, spider):
         self.request_stats(request=request)
 
     def log_response(self, response, request, spider):
         if self.scrapeops_middleware_enabled() == False:
-            ## alert scrapeops
-            self.response_stats(middleware=False, request=request, response=response)
+            self.response_stats(request=request, response=response)
 
     def log_response_middleware(self, request=None, response=None, spider=None):
         if self.scrapeops_middleware_enabled():
-            self.response_stats(middleware=True, request=request, response=response)
+            self.response_stats(request=request, response=response)
 
     def log_exception(self, request=None, spider=None, exception_class=None):
         if self.scrapeops_middleware_enabled():

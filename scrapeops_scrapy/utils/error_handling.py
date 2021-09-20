@@ -12,3 +12,5 @@ def exception_handler(func):
         except Exception as e:
             pass
     return wrapper
+
+
