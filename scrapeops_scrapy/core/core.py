@@ -3,19 +3,19 @@ from twisted.internet import task
 
 from scrapeops_scrapy.exceptions import ScrapeOpsMissingAPIKey
 from scrapeops_scrapy.utils import utils
-from scrapeops_scrapy.controller.core import SDKCore
-from scrapeops_scrapy.stats.core import StatsCore
+from scrapeops_scrapy.core.controllers import SDKControllers
+from scrapeops_scrapy.stats.logger import StatsLogger
 from scrapeops_scrapy.normalizer.request_response import RequestResponse
 
 
-class ScrapeopsCore(SDKCore, StatsCore):
+class ScrapeopsCore(SDKControllers, StatsLogger):
     """
         Where the core ScrapeOps Functionality Goes
     """
 
     def __init__(self):
-        SDKCore.__init__(self)
-        StatsCore.__init__(self)
+        SDKControllers.__init__(self)
+        StatsLogger.__init__(self)
         
     def start_sdk(self, spider=None, crawler=None):
         self.start_time = self.period_start_time = utils.current_time()
@@ -37,6 +37,8 @@ class ScrapeopsCore(SDKCore, StatsCore):
             self.close_periodic_monitor()
             if self._scrapeops_debug_mode:
                 self.display_stats()
+                self.item_validation_middleware.print_coverage()
+                self.failed_url_middleware.print_stats()
 
     def response_stats(self, request=None, response=None):
         if self.sdk_enabled():
@@ -46,8 +48,10 @@ class ScrapeopsCore(SDKCore, StatsCore):
 
     def request_stats(self, request=None):
         if self.sdk_enabled():
+            request.meta['sops_time'] = utils.current_time()
             request_response_object = RequestResponse(request=request)
             self.request_response_middleware.normalise_domain_proxy_data(request_response_object)
+            self.add_missed_urls_callback(request)
             self.generate_request_stats(request_response_object, request=request)
 
     def exception_stats(self, request=None, exception_class=None):
@@ -59,10 +63,15 @@ class ScrapeopsCore(SDKCore, StatsCore):
     def item_stats(self, signal_type=None, item=None, response=None, spider=None):
         if self.sdk_enabled():
             request_response_object = RequestResponse(response=response)
-            self.request_response_middleware.process(request_response_object, response) 
+            self.request_response_middleware.normalise_domain_proxy_data(request_response_object) 
+            if signal_type == 'item_scraped':
+                self.item_validation_middleware.validate(request_response_object, item)
             self.generate_item_stats(request_response_object, signal=signal_type, response=response)
 
-
+    def add_missed_urls_callback(self, request):
+        if request.errback is None:
+            request.errback = self.failed_url_middleware.log_failure
+            
     """
         PERIODIC MONITOR
     """
@@ -76,7 +85,7 @@ class ScrapeopsCore(SDKCore, StatsCore):
         if self.get_runtime(time=period_time) % self.get_periodic_frequency() == 0:
             self.period_finish_time = period_time
             if self.sdk_enabled():
-                self.aggregate_stats(crawler=self.crawler) 
+                self.aggregate_stats(crawler=self.crawler, middleware=self.scrapeops_middleware_enabled()) 
                 self.send_stats(periodic_stats=self._periodic_stats, overall_stats=self._overall_stats, stats_type='periodic')
                 self.reset_periodic_stats()
                 self.period_start_time = utils.current_time()

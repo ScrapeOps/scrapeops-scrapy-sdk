@@ -1,4 +1,4 @@
-from scrapeops_scrapy.controller.api import SOPSRequest 
+from scrapeops_scrapy.core.api import SOPSRequest 
 from scrapeops_scrapy.utils import utils
 
 class ErrorLogger(object):

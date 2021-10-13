@@ -145,7 +145,9 @@ class RetryMiddleware:
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
-
+        self.RESPONSE_COUNT = 0
+        self.EXCEPTION_COUNT = 0
+        self.RESPONSE_RETRY = 0
 
     @classmethod
     def from_crawler(cls, crawler):
@@ -153,12 +155,15 @@ class RetryMiddleware:
 
     def process_response(self, request, response, spider):
         ## ScrapeOps Logger
+        # print('### RESPONSE LOG - OUTSIDE')
+        # self.RESPONSE_COUNT += 1
+        # print('RESPONSE_COUNT', self.RESPONSE_COUNT)
+        # print('')
         spider.crawler.signals.send_catch_log(
             signal=scrapeops_signals.scrapeops_response_recieved, 
             request=request, 
             response=response, 
             spider=spider)
-        ## End of ScrapeOps Logger
 
         if request.meta.get('dont_retry', False):
             return response
@@ -168,14 +173,12 @@ class RetryMiddleware:
         return response
 
     def process_exception(self, request, exception, spider):
-        ## ScrapeOps Logger
         ex_class = global_object_name(exception.__class__)
         spider.crawler.signals.send_catch_log(
             signal=scrapeops_signals.scrapeops_exception_recieved, 
             request=request, 
             spider=spider,
             exception_class=ex_class)
-        ## End of ScrapeOps Logger
 
         if (
             isinstance(exception, self.EXCEPTIONS_TO_RETRY)
@@ -184,6 +187,9 @@ class RetryMiddleware:
             return self._retry(request, exception, spider)
 
     def _retry(self, request, reason, spider): 
+        self.RESPONSE_RETRY += 1
+        # print('RESPONSE_RETRY', self.RESPONSE_RETRY)
+        # print('')
         max_retry_times = request.meta.get('max_retry_times', self.max_retry_times)
         priority_adjust = request.meta.get('priority_adjust', self.priority_adjust)
         return get_retry_request(

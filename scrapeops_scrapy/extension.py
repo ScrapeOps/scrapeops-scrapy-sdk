@@ -1,6 +1,6 @@
 from scrapy import signals
 
-from scrapeops_scrapy.controller.engine import ScrapeopsCore 
+from scrapeops_scrapy.core.core import ScrapeopsCore 
 from scrapeops_scrapy.signals import scrapeops_signals
 
 
@@ -24,10 +24,8 @@ class ScrapeOpsMonitor(ScrapeopsCore):
                                 signal=signals.request_reached_downloader)
 
         crawler.signals.connect(ext.log_response,
-                                signal=signals.response_received)
+                                signal=signals.response_downloaded)
         
-        crawler.signals.connect(ext.item_scraped, 
-                                signal=signals.item_scraped)
 
         crawler.signals.connect(ext.log_response_middleware, 
                                 signal=scrapeops_signals.scrapeops_response_recieved)
@@ -35,10 +33,18 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         crawler.signals.connect(ext.log_exception, 
                                 signal=scrapeops_signals.scrapeops_exception_recieved)
 
+        crawler.signals.connect(ext.item_scraped, 
+                                signal=signals.item_scraped)
+
+        crawler.signals.connect(ext.item_dropped, 
+                                signal=signals.item_dropped)
+
+        crawler.signals.connect(ext.item_error, 
+                                signal=signals.item_error)
+
         crawler.signals.connect(ext.response_rejected, 
                                 signal=scrapeops_signals.scrapeops_response_rejected)
 
-        # return the extension object
         return ext
 
     def spider_opened(self, spider):

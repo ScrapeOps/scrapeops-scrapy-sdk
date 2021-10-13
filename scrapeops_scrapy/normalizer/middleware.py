@@ -1,5 +1,5 @@
-from scrapeops_scrapy.controller.api import SOPSRequest 
-from scrapeops_scrapy.normalizer.validation import ResponseValidator
+from scrapeops_scrapy.core.api import SOPSRequest 
+from scrapeops_scrapy.validators.response_validator import ResponseValidator
 
 
 class RequestResponseMiddleware(object):
@@ -7,17 +7,21 @@ class RequestResponseMiddleware(object):
     PROXY_DOMAIN_NORMALIZATION = True
     RESPONSE_VALIDATION = True
     PROXY_ALERTS = False
+    FAILED_URL_LOGGER_ENABLED = True
+    LOG_MISSED_URLS = False
 
-    def __init__(self, job_group_id, proxy_apis, generic_validators, error_logger):
+    def __init__(self, job_group_id, proxy_apis, generic_validators, error_logger, allowed_response_codes):
         self.job_group_id = job_group_id
         self._proxy_apis = proxy_apis
         self._data_coverage_validation = False
         self._domains = {}
         self._proxies = {}
         self._generic_validators = generic_validators
+        self._allowed_response_codes = allowed_response_codes
         self._error_logger = error_logger
         self._error_count = 0
         self._error_alerts_sent = {}
+        self._missed_urls = {}
 
     def process(self, request_response_object, response):
         self.normalise_domain_proxy_data(request_response_object)
@@ -147,6 +151,19 @@ class RequestResponseMiddleware(object):
 
             if response.status != 200 and ResponseValidator.failed_scan(request_response_object, self._domains):
                 ResponseValidator.validate(request_response_object, response, generic_tests=self._generic_validators)
+
+
+    def failed_url(self, request_response_object, response=None):
+        if RequestResponseMiddleware.FAILED_URL_LOGGER_ENABLED:
+            if (response.status < 200 and response.status > 300) and (response.status not in self._allowed_response_codes):
+                if self._missed_urls.get('count') is None:
+                    self._missed_urls['count'] = 0
+                self._missed_urls['count'] += 1
+
+                if RequestResponseMiddleware.LOG_MISSED_URLS:
+                    if self._missed_urls.get(response.status) is None:
+                        self._missed_urls[response.status] = []
+                    self._missed_urls[response.status].append(request_response_object.get_real_url())
 
 
     def calculate_stats(request_response_object):

@@ -10,7 +10,7 @@ from scrapeops_scrapy.normalizer.exceptions import ExceptionNormalizer
 import copy
 
 
-class StatsCore(OverallStatsModel, PeriodicStatsModel):
+class StatsLogger(OverallStatsModel, PeriodicStatsModel):
 
     def __init__(self):
         OverallStatsModel.__init__(self)
@@ -34,6 +34,8 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         self.set_value(self._overall_stats, 'job_finish_time', 0)
         self.set_value(self._overall_stats, 'job_run_time', 0)
         self.set_value(self._overall_stats, 'status', 'Live')
+        self.set_value(self._overall_stats, 'middleware_enabled', self._scrapeops_middleware)
+        
 
 
     def spider_close_stats(self, reason=None, crawler=None):
@@ -75,7 +77,7 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         custom_tag = request_response_object.get_custom_tag()
         custom_signal = 'none'
         reslen = len(response_httprepr(response))
-        total_latency = request.meta.get('_total_latency', 0) + request.meta['download_latency']
+        total_latency = request.meta['download_latency']
 
         ## periodic stats
         self.check_periodic_stats()
@@ -95,29 +97,7 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         self.max_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|max_latency', total_latency)
 
 
-        # ## periodic stats
-        # self.check_periodic_stats()
-        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|count')
-        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|bytes', count=reslen)
-        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|retries', count=request.meta.get('retry_times', 0))
-        # self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|total_latency', count=total_latency)
-        # self.min_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|min_latency', total_latency)
-        # self.max_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|max_latency', total_latency)
-
-        # ## overall stats
-        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|count')
-        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|bytes', count=reslen)
-        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|retries', count=request.meta.get('retry_times', 0))
-        # self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|total_latency', count=total_latency)
-        # self.min_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|min_latency', total_latency)
-        # self.max_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|max_latency', total_latency)
-
-
-        
-        ## captcha[1]_cloudflare_geo
-        #self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
-        
-    def generate_item_stats(self, request_response_object, signal=None, response=None, domain=None, proxy=None):
+    def generate_item_stats(self, request_response_object, signal=None, response=None):
         request = response.request
         proxy_name = request_response_object.get_proxy_name()
         proxy_setup = request_response_object.get_proxy_setup()
@@ -141,18 +121,6 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
             self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
             self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
 
-        
-        # if signal == 'item_scraped':
-        #     self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items')
-        #     self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items')
-        
-        # elif signal == 'item_dropped':
-        #     self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items_dropped')
-        #     self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|items_dropped')
-        
-        # elif signal == 'item_error':
-        #     self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|item_errors')
-        #     self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|item_errors')
     
 
     def generate_exception_stats(self, request_response_object, request=None, exception_class=None):
@@ -165,15 +133,22 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
         custom_tag = request_response_object.get_custom_tag()
         custom_signal = 'none'
         exception_type = ExceptionNormalizer.normalise_exception(exception_class)
+        download_latency = request.meta.get('download_latency')
+        if download_latency is None:
+            start_time = request.meta.get('sops_time') 
+            download_latency = utils.current_time() - start_time
+            download_latency 
 
         self.check_periodic_stats()
         self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
         self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
-
+        self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|{validation}|{geo}|{custom_tag}|{custom_signal}|total_latency', count=download_latency)
     
-    def aggregate_stats(self, crawler):
+    def aggregate_stats(self, crawler=None, middleware=False):
         self.avg_latency()
         self.log_levels(crawler)
+        if middleware is False:
+            self.get_exception_stats(crawler)
 
 
     def avg_latency(self):
@@ -194,6 +169,24 @@ class StatsCore(OverallStatsModel, PeriodicStatsModel):
             previous_value = self._overall_stats.get(log_key, 0)
             self.set_value(self._periodic_stats, log_key, log_value - previous_value)
             self.set_value(self._overall_stats, log_key, log_value)
+
+    
+    def get_exception_stats(self, crawler):
+        scrapy_stats = crawler.stats.get_stats()
+        if scrapy_stats.get('downloader/exception_count') is not None:
+            exception_values = [ {k:v} for k,v in scrapy_stats.items() if k.startswith('downloader/exception_type_count/')]
+            for exception in exception_values:
+                for key, value in exception.items():
+                    key_type = key.replace('downloader/exception_type_count/', '')
+                    try:
+                        exception_type = key_type.split('.')[-1]
+                    except:
+                        exception_type = key_type
+                    self.set_value(self._overall_stats, f'responses|unknown|unknown|unknown|unknown|unknown|{exception_type}|unknown|unknown|unknown|unknown|count', value)
+
+
+
+    
 
             
 

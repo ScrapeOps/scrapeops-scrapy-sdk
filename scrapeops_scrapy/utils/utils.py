@@ -61,6 +61,10 @@ def append_raw_string(arg):
          return '"{}"  '.format(arg)
     return "{}  ".format(arg)
 
+def merge_dicts(x, y):
+    z = x.copy()   
+    z.update(y)
+    return z
 
 
 

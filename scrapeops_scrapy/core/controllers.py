@@ -1,32 +1,27 @@
-from scrapeops_scrapy.controller.model import SDKModel 
-from scrapeops_scrapy.controller.api import SOPSRequest 
 
 
+from scrapeops_scrapy.utils import utils
+from scrapeops_scrapy.core.setup import SDKSetup
+from scrapeops_scrapy.core.api import SOPSRequest 
 
-
-class SDKCore(SDKModel):
-    """
-        Where the core ScrapeOps Functionality Goes
-        - send requests to the API
-        - deal with errors
-    """
+class SDKControllers(SDKSetup):
 
     SETUP_ATTEMPT_LIMIT = 3
 
     def __init__(self):
-        SDKModel.__init__(self)
+        SDKSetup.__init__(self)
 
     def send_setup_request(self):
         post_body = self.setup_data()
         data, status = SOPSRequest().setup_request(body=post_body)
         if status.valid:
             self.initialize_job_details(data)
-        elif status.action == 'retry' and self._setup_attempts < SDKCore.SETUP_ATTEMPT_LIMIT:
+        elif status.action == 'retry' and self._setup_attempts < SDKControllers.SETUP_ATTEMPT_LIMIT:
             self._setup_attempts += 1
             self._error_logger.log_error(reason='setup_failed', 
                                          error=status.error, 
                                          data={'setup_attempts': self._setup_attempts})
-        elif status.action == 'retry' and self._setup_attempts >= SDKCore.SETUP_ATTEMPT_LIMIT:
+        elif status.action == 'retry' and self._setup_attempts >= SDKControllers.SETUP_ATTEMPT_LIMIT:
             self.deactivate_sdk(reason='exceeded_max_setup_attempts', 
                                 error=status.error, 
                                 data={'setup_attempts': self._setup_attempts}, 
@@ -70,11 +65,14 @@ class SDKCore(SDKModel):
                 self.deactivate_sdk(reason=f'sending_{stats_type}_stats_failure', error=status.error,
                                     data={'failed_periods': self.failed_periods}, request_type=stats_type)   
 
-            
 
-    """
-        SDK CONTROLLERS
-    """
+    def sdk_enabled(self):
+        if self._sdk_active:
+            if self.request_response_middleware is None:
+                self.initialize_normalizer_middleware()
+            return True
+        return False
+
 
     def check_api_key_present(self):
         if self._scrapeops_api_key == None:
@@ -82,16 +80,6 @@ class SDKCore(SDKModel):
             return False
         self._sdk_active = True
         return True
-
-    def sdk_enabled(self):
-        if self._sdk_active:
-            self.enabled_check()
-            return True
-        return False
-
-    
-    def enabled_check(self):
-        self.initialize_request_response_middleware()
 
     def deactivate_sdk(self, reason=None, error=None, request_type=None, data=None):
         self._sdk_active = False
@@ -110,26 +98,20 @@ class SDKCore(SDKModel):
         self.cached_failed_stats = []
         self.failed_periods = 0
 
-     
+    def get_runtime(self, time=None):
+        if time is None:
+            return utils.current_time() - self._scrapeops_job_start 
+        return time - self._scrapeops_job_start 
 
+    def scrapeops_middleware_enabled(self):
+        if self._scrapeops_middleware == True:
+            return True
+        return False
 
-
-
-
-
-
-
+    def export_logs(self):
+        if self._scrapeops_export_scrapy_logs and self.log_file is not None:
+            return True
+        return False
 
     
-    
-    
-
-
-
-
-
-
-
-
-         
     
