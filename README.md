@@ -62,7 +62,7 @@ When you have your API key, open your Scrapy projects `settings.py` file and ins
 SCRAPEOPS_API_KEY = 'YOUR_API_KEY'
 ```
 
-#### #3 - Add in the ScrapeOps extension:
+#### #3 - Add in the ScrapeOps Extension:
 In the `settings.py` file, add in the ScrapeOps extension, by simply adding it to the `EXTENSIONS` dictionary.
 
 ```python
@@ -71,7 +71,7 @@ EXTENSIONS = {
 }
 ```
 
-#### #4 - Enable the ScrapeOps stats middleware:
+#### #4 - Enable the ScrapeOps Retry Middleware:
 To get the most accurate stats, you need to add in the ScrapeOps retry middleware into the `DOWNLOADER_MIDDLEWARES` dictionary and disable the default Scrapy Retry middleware `settings.py` file. You can do this by setting the default Scrapy RetryMiddleware to `None` and enabling the ScrapeOps retry middleware in it's place.
 
 ```python
