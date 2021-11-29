@@ -3,6 +3,10 @@ The ScrapeOps Scrapy SDK is an extension for your Scrapy spiders that gives you 
 
 Just enable it in your `settings.py` file and the SDK will automatically monitor your scrapers and send your logs to your scraping dashboard. When connected to a ScrapyD server, you can schedule and manage all your jobs from one easy to use interface.
 
+
+![ScrapeOps Dashboard Demo](https://github.com/ScrapeOps/scrapeops-docs/blob/main/assets/scrapeops-hero-page-small.jpg)
+
+
 ## :computer: Demo
 [:link: ScrapeOps Dashboard Demo](https://scrapeops.io/app/login/demo)
 
