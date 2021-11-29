@@ -8,12 +8,13 @@ class DomainNormalizer(object):
     
     @staticmethod
     def get_domain(url):
+        #if 'http://' not in url or 'http://' not in url or 'socks5://' not in url
         try:
             if DomainNormalizer.if_localhost(url):
                 return 'localhost'
             res = get_tld(url, as_object=True)
             return res.fld
-        except:
+        except Exception:
             return 'unknown'
 
     @staticmethod
@@ -25,7 +26,7 @@ class DomainNormalizer(object):
             if res.subdomain != '':
                 return res.subdomain + '.' + res.fld
             return res.fld
-        except:
+        except Exception:
             return 'unknown'
 
 

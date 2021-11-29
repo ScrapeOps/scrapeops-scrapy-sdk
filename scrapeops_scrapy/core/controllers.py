@@ -12,8 +12,7 @@ class SDKControllers(SDKSetup):
         SDKSetup.__init__(self)
 
     def send_setup_request(self):
-        post_body = self.setup_data()
-        data, status = SOPSRequest().setup_request(body=post_body)
+        data, status = SOPSRequest().setup_request(body=self.setup_data())
         if status.valid:
             self.initialize_job_details(data)
         elif status.action == 'retry' and self._setup_attempts < SDKControllers.SETUP_ATTEMPT_LIMIT:
@@ -104,7 +103,7 @@ class SDKControllers(SDKSetup):
         return time - self._scrapeops_job_start 
 
     def scrapeops_middleware_enabled(self):
-        if self._scrapeops_middleware == True:
+        if self._scrapeops_middleware is True:
             return True
         return False
 

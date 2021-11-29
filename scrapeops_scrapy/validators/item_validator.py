@@ -1,3 +1,5 @@
+from typing import Dict
+from scrapy.item import Item
 
 class ItemValidator(object):
 
@@ -18,33 +20,43 @@ class ItemValidator(object):
         self.invalid_items = 0
         self.invalid_items_urls = {}
 
+
+    def extract_name_fields_item(item):
+        return 
+
     def validate(self, request_response_object, item):
         if ItemValidator.ITEM_COVERAGE_ENABLED:
             self.increment_items()
-            item_name = ItemValidator.get_item_name(item)
-            fields = ItemValidator.get_item_fields(item)
-            domain = request_response_object.get_domain()
-            invalid_fields = []
-            valid_item = True
-            self.check_item_exists(domain, item_name, fields)
-            self.item_coverage[domain][item_name]['num_items'] += 1
-            self.increment_total_fields(fields.keys())
-            for k in fields.keys():
-                if(item.get(k) is not None and item.get(k) != ''):
-                    self.item_coverage[domain][item_name]['coverage'][k] += 1
-                else:
-                    valid_item = False
-                    self.increment_invalid_fields()
-                    invalid_fields.append(k)
-            
-            if valid_item is False:
-                self.item_coverage[domain][item_name]['num_invalid_items'] += 1
-                self.increment_invalid_items()
-            if ItemValidator.INVALID_ITEM_URLS_LOGGING_ENABLED and len(invalid_fields) > 0:
-                self.log_invalid_item_url(request_response_object.get_real_url(), item_name, invalid_fields)
+            if isinstance(item, Item):
+                item_name = ItemValidator.get_item_name(item)
+                fields = ItemValidator.get_item_fields(item)
+                field_keys = fields.keys()
+            if isinstance(item, Dict):
+                item_name = 'Unknown'
+                field_keys = item.keys()
+            if item_name is not None and field_keys is not None:
+                domain = request_response_object.get_domain()
+                invalid_fields = []
+                valid_item = True
+                self.check_item_exists(domain, item_name, field_keys)
+                self.item_coverage[domain][item_name]['num_items'] += 1
+                self.increment_total_fields(field_keys)
+                for k in field_keys:
+                    if(item.get(k) is not None and item.get(k) != ''):
+                        self.item_coverage[domain][item_name]['coverage'][k] += 1
+                    else:
+                        valid_item = False
+                        self.increment_invalid_fields()
+                        invalid_fields.append(k)
+                
+                if valid_item is False:
+                    self.item_coverage[domain][item_name]['num_invalid_items'] += 1
+                    self.increment_invalid_items()
+                if ItemValidator.INVALID_ITEM_URLS_LOGGING_ENABLED and len(invalid_fields) > 0:
+                    self.log_invalid_item_url(request_response_object.get_real_url(), item_name, invalid_fields)
 
 
-    def check_item_exists(self, domain, item_name, fields):
+    def check_item_exists(self, domain, item_name, field_keys):
         if self.item_coverage.get(domain) is None:
             self.item_coverage[domain] = {}
         if self.item_coverage[domain].get(item_name) is None:
@@ -54,8 +66,8 @@ class ItemValidator(object):
                 'num_items': 0,
                 'num_invalid_items': 0,
             }
-            self.item_coverage[domain][item_name]['num_fields'] = len(fields.keys())
-            for k in fields.keys():
+            self.item_coverage[domain][item_name]['num_fields'] = len(field_keys)
+            for k in field_keys:
                 self.item_coverage[domain][item_name]['coverage'][k] = 0
                 
 
@@ -103,12 +115,6 @@ class ItemValidator(object):
         return round((valid_fields / overall_stats.get('num_total_fields'))*100)
     
 
-    def print_coverage(self):
-        print('item_coverage', self.item_coverage)
-        print('items', self.items)
-        print('invalid_items', self.invalid_items)
-        print('self.invalid_items_urls', self.invalid_items_urls)
-    
     @staticmethod
     def get_item_fields(item):
         return item.fields

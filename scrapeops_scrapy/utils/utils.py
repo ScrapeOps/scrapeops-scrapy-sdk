@@ -24,8 +24,8 @@ def get_args():
             arg_dict['options'].append(arg)
         if arg.startswith('-a'):
             try:                   
-                if args[index + 1].startswith('-') == False and args[index + 1].startswith('--') == False: arg_dict['args'].append(args[index + 1])  
-            except:
+                if args[index + 1].startswith('-') is False and args[index + 1].startswith('--') is False: arg_dict['args'].append(args[index + 1])  
+            except Exception:
                 arg_dict['args'].append(arg)
     return arg_dict
 

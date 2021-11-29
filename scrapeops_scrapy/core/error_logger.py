@@ -53,7 +53,7 @@ class ErrorLogger(object):
 
                 if status.valid is False:
                         self.log_error(reason='send_error_report_failed', error=status.error) 
-            except:
+            except Exception:
                 pass
 
 

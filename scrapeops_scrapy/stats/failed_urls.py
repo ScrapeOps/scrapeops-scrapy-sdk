@@ -4,7 +4,7 @@ class FailedUrlsHandler(object):
 
     FAILED_URL_LOGGER_ENABLED = True
     LOG_MISSED_URLS = False
-    MAX_LOGGED_URLS = 1000
+    MAX_LOGGED_URLS = 100
 
     def __init__(self):
         self.failed_urls_count = 0
@@ -29,9 +29,5 @@ class FailedUrlsHandler(object):
 
     def enabled(self):
         return self.errback_free
-
-    def print_stats(self):
-        print('failed_urls_count', self.failed_urls_count)
-        print('failed_urls_list', self.failed_urls_list)
 
 

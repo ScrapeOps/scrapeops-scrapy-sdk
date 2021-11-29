@@ -180,7 +180,7 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
                     key_type = key.replace('downloader/exception_type_count/', '')
                     try:
                         exception_type = key_type.split('.')[-1]
-                    except:
+                    except Exception:
                         exception_type = key_type
                     self.set_value(self._overall_stats, f'responses|unknown|unknown|unknown|unknown|unknown|{exception_type}|unknown|unknown|unknown|unknown|count', value)
 

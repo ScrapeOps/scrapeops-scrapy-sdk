@@ -1,6 +1,6 @@
 from scrapeops_scrapy.exceptions import ScrapeOpsAPIResponseError
-from scrapeops_scrapy.utils.error_handling import exception_handler
 from scrapeops_scrapy.utils.utils import merge_dicts
+from scrapeops_scrapy.normalizer.proxies import ProxyNormalizer
 import requests
 import time
 
@@ -24,7 +24,7 @@ class SOPSRequest(object):
     
     def setup_request(self, body=None):
         url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'setup/?api_key={SOPSRequest.API_KEY}'
-        data, error = SOPSRequest.post(self, url, body=body)
+        data, error = SOPSRequest.post(url, body=body)
         data, self.valid, self.action, self.error = SOPSRequest.setup_stats_validation(data, error)
         return data, self
 
@@ -33,9 +33,9 @@ class SOPSRequest(object):
         post_body = merge_dicts(SOPSRequest.SCRAPEOPS_LOGGING_DATA, body)
         if files is not None:
            url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'logs/?api_key={SOPSRequest.API_KEY}&log_type=scrapy' 
-           _, _ = SOPSRequest.post_file(self, url, body=log_body, files=files)
+           _, _ = SOPSRequest.post_file(url, body=log_body, files=files)
         url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'stats/?api_key={SOPSRequest.API_KEY}'
-        data, error = SOPSRequest.post(self, url, body=post_body)
+        data, error = SOPSRequest.post(url, body=post_body)
         data, self.valid, self.action, self.error = SOPSRequest.setup_stats_validation(data, error)
         return data, self
 
@@ -44,10 +44,10 @@ class SOPSRequest(object):
         post_body = merge_dicts(SOPSRequest.SCRAPEOPS_LOGGING_DATA, body)
         if files is None:
             url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'errors/?api_key={SOPSRequest.API_KEY}&error_type={error_type}'
-            data, error = SOPSRequest.post(self, url, body=post_body, files=files)
+            data, error = SOPSRequest.post(url, body=post_body, files=files)
         else:
             url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'errors/logs/?api_key={SOPSRequest.API_KEY}&error_type={error_type}'
-            data, error = SOPSRequest.post_file(self, url, body=post_body, files=files)
+            data, error = SOPSRequest.post_file(url, body=post_body, files=files)
         data, self.valid, self.action, self.error = SOPSRequest.error_report_validation(data, error)
         return data, self
     
@@ -57,7 +57,7 @@ class SOPSRequest(object):
         proxy_string = request_response_object.get_raw_proxy()
         post_body = merge_dicts(SOPSRequest.SCRAPEOPS_LOGGING_DATA, {'proxy_string': proxy_string})
         url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'normalizer/proxy/?api_key={SOPSRequest.API_KEY}&proxy_name={proxy_name}'
-        data, error = SOPSRequest.post(self, url, body=post_body)
+        data, error = SOPSRequest.post(url, body=post_body)
         data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='proxy')
         return data, self
 
@@ -65,8 +65,20 @@ class SOPSRequest(object):
     def proxy_api_normalisation_request(self, request_response_object):
         proxy_name = request_response_object.get_proxy_api_name()
         url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'normalizer/proxy_api/?api_key={SOPSRequest.API_KEY}&proxy_name={proxy_name}'
-        data, error = SOPSRequest.post(self, url, body=SOPSRequest.SCRAPEOPS_LOGGING_DATA)
-        data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='proxy')
+        data, error = SOPSRequest.post(url, body=SOPSRequest.SCRAPEOPS_LOGGING_DATA)
+        data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='proxy_api')
+        return data, self
+
+    def proxy_port_normalisation_request(self, request_response_object, test_data=None):
+        post_body = merge_dicts(SOPSRequest.SCRAPEOPS_LOGGING_DATA, {
+            'proxy_string': request_response_object.get_complete_proxy_string(), 
+            'proxy_headers': request_response_object.get_proxy_port_headers(), 
+            'domain': request_response_object.get_proxy_port_name()})
+        url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'normalizer/proxy_port/?api_key={SOPSRequest.API_KEY}&job_id={SOPSRequest.JOB_GROUP_ID}'
+        if test_data is not None:
+            post_body['test_data'] = test_data
+        data, error = SOPSRequest.post(url, body=post_body)
+        data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='proxy_port')
         return data, self
 
 
@@ -75,7 +87,7 @@ class SOPSRequest(object):
         real_url = request_response_object.get_real_url()
         post_body = merge_dicts(SOPSRequest.SCRAPEOPS_LOGGING_DATA, {'url': real_url})
         url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'normalizer/domain/?api_key={SOPSRequest.API_KEY}&domain={domain}'
-        data, error = SOPSRequest.post(self, url, body=post_body)
+        data, error = SOPSRequest.post(url, body=post_body)
         data, self.valid, self.action, self.error = SOPSRequest.normaliser_validation(data, error, request_type='domain')
         return data, self
 
@@ -86,10 +98,13 @@ class SOPSRequest(object):
         data['alerts_sent'] = alerts_sent
         post_body = merge_dicts(SOPSRequest.SCRAPEOPS_LOGGING_DATA, data)
         url = SOPSRequest.SCRAPEOPS_ENDPOINT + SOPSRequest.SCRAPEOPS_API_VERSION + f'alerts/proxy/?api_key={SOPSRequest.API_KEY}&job_group_id={job_group_id}'
-        data, error = SOPSRequest.post(self, url, body=post_body)
+        data, error = SOPSRequest.post(url, body=post_body)
         data, self.valid, self.error = SOPSRequest.generic_validation(data, error)
         return data, self
 
+    def proxy_test_request(self, url, request_response_object):
+        data, _ = SOPSRequest.get(url, proxy=request_response_object.get_complete_proxy_string())
+        return data
 
     @staticmethod
     def generic_validation(data, error):
@@ -120,10 +135,14 @@ class SOPSRequest(object):
         elif data.get('api_key') == 'invalid':
             return data, False, 'close', 'invalid_api_key'
         
-        ## proxy specific
-        elif request_type=='proxy' and data.get('proxy_parsing_data') is None:
+        ## proxy port 
+        elif request_type=='proxy_port' and data.get('proxy_port_details') is None:
+            return data, False, 'fallback', 'no_proxy_port_details'
+
+        ## proxy api
+        elif request_type=='proxy_api' and data.get('proxy_parsing_data') is None:
             return data, False, 'fallback', 'no_proxy_parsing_data'
-        elif request_type=='proxy' and data.get('proxy_parsing_data') is not None:
+        elif request_type=='proxy_api' and data.get('proxy_parsing_data') is not None:
             proxy_parsing_data = data.get('proxy_parsing_data')
             if proxy_parsing_data.get('known_proxy') is False:
                 return data, False, 'fallback', 'unknown_proxy'
@@ -131,12 +150,6 @@ class SOPSRequest(object):
         ## domain specific
         elif request_type=='domain' and data.get('domain_parsing_data') is None:
             return data, False, 'fallback', 'no_domain_parsing_data'
-        # elif request_type=='domain' and data.get('domain_parsing_data') is not None:
-        #     domain_parsing_data = data.get('domain_parsing_data')
-        #     if domain_parsing_data.get('known_domain') is False:
-        #         return data, False, 'fallback', 'unknown_domain'
-        
-        ## valid response
         return data, True, 'valid', None
 
     
@@ -156,11 +169,14 @@ class SOPSRequest(object):
         }
 
     @staticmethod
-    def get(self, url):
+    def get(url, proxy=None, check=True):
+        proxies = None
+        if ProxyNormalizer.unknown_proxy_scheme(proxy) is not True:
+            proxies = {ProxyNormalizer.get_proxy_scheme(proxy): proxy}
         for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
-                response = requests.get(url, timeout=SOPSRequest.TIMEOUT) 
-                if response.status_code == 403:
+                response = requests.get(url, timeout=SOPSRequest.TIMEOUT, proxies=proxies) 
+                if check and response.status_code == 403:
                     return None, False, 'close', 'invalid_api_key'
                 if response.status_code == 200:
                     data = response.json()
@@ -180,10 +196,13 @@ class SOPSRequest(object):
 
 
     @staticmethod
-    def post(self, url, body=None, files=None):
+    def post(url, body=None, files=None, proxy=None):
+        proxies = None
+        if ProxyNormalizer.unknown_proxy_scheme(proxy) is not True:
+            proxies = {ProxyNormalizer.get_proxy_scheme(proxy): proxy}
         for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
-                response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files) 
+                response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files, proxies=proxies) 
                 if response.status_code == 403:
                     return None, False, 'close', 'invalid_api_key'
                 if response.status_code == 200:
@@ -205,7 +224,7 @@ class SOPSRequest(object):
 
 
     @staticmethod
-    def post_file(self, url, body=None, files=None):
+    def post_file(url, body=None, files=None):
         for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
                 response = requests.post(url, data=body, timeout=SOPSRequest.TIMEOUT, files=files) 

@@ -14,3 +14,7 @@ class ScrapeOpsAPIResponseError(Exception):
     
     def __init__(self):
         super().__init__()
+
+
+class DecodeError(Exception):
+    pass

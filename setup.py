@@ -1,12 +1,12 @@
-from setuptools import setup
-from setuptools import find_packages
+from setuptools import setup, find_packages
 
 
-VERSION = '0.2'
-DESCRIPTION = 'Scrapeops Scrapy SDK (MVP)'
+VERSION = '0.3'
+DESCRIPTION = 'Scrapeops Scrapy SDK, is a monitoring tool for your Scrapy spiders.'
 
 setup(name='scrapeops_scrapy',
       description=DESCRIPTION,
+      long_description=DESCRIPTION,
       author="ScrapeOps",
       author_email="info@scrapeops.io",
       version=VERSION,
@@ -18,7 +18,6 @@ setup(name='scrapeops_scrapy',
           "requests==2.24.0",
           "json5==0.9.5",
           "urllib3==1.25.10",
-          ##"uuid==1.30",
           ],
       classifiers=[
         "Programming Language :: Python",

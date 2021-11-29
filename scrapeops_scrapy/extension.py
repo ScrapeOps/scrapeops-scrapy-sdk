@@ -57,7 +57,7 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         self.request_stats(request=request)
 
     def log_response(self, response, request, spider):
-        if self.scrapeops_middleware_enabled() == False:
+        if self.scrapeops_middleware_enabled() is False:
             self.response_stats(request=request, response=response)
 
     def log_response_middleware(self, request=None, response=None, spider=None):

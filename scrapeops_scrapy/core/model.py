@@ -22,7 +22,6 @@ class BaseSDKModel(object):
         self._period_frequency = 60 
         self._period_freq_list = None
         self._sdk_run_time = 0
-        self._sdk_retries = 3 ## --> not used
         self._setup_attempts = 0
         self._scrapeops_test_id = None
         self._error_logger = None
@@ -270,7 +269,7 @@ class SDKData(BaseSDKModel):
         try:
             self.server_hostname = socket.gethostname()
             self.server_ip = socket.gethostbyname(self.server_hostname)
-        except:
+        except Exception:
             self.server_hostname = 'unknown'
             self.server_ip = 'unknown'
 
@@ -291,7 +290,7 @@ class SDKData(BaseSDKModel):
                 try: 
                     if arg.split('=')[1] == 'True':
                         return True
-                except:
+                except Exception:
                     pass
         if crawler.settings.get('SCRAPEOPS_EXPORT_SCRAPY_LOGS') is not None:
             return True

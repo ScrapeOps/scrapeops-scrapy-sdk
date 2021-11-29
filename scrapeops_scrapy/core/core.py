@@ -29,6 +29,7 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
             self.deactivate_sdk(reason='no_api_key', error=err)
             raise err
     
+
     def close_sdk(self, spider=None, reason=None):
         if self.sdk_enabled():
             self.period_finish_time = utils.current_time()
@@ -37,14 +38,7 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
             self.close_periodic_monitor()
             if self._scrapeops_debug_mode:
                 self.display_stats()
-                self.item_validation_middleware.print_coverage()
-                self.failed_url_middleware.print_stats()
 
-    def response_stats(self, request=None, response=None):
-        if self.sdk_enabled():
-            request_response_object = RequestResponse(request=request, response=response)
-            self.request_response_middleware.process(request_response_object, response) 
-            self.generate_response_stats(request_response_object, request=request, response=response)
 
     def request_stats(self, request=None):
         if self.sdk_enabled():
@@ -54,11 +48,20 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
             self.add_missed_urls_callback(request)
             self.generate_request_stats(request_response_object, request=request)
 
+
+    def response_stats(self, request=None, response=None):
+        if self.sdk_enabled():
+            request_response_object = RequestResponse(request=request, response=response)
+            self.request_response_middleware.process(request_response_object, response) 
+            self.generate_response_stats(request_response_object, request=request, response=response)
+
+
     def exception_stats(self, request=None, exception_class=None):
         if self.sdk_enabled():
             request_response_object = RequestResponse(request=request)
             self.request_response_middleware.normalise_domain_proxy_data(request_response_object)
             self.generate_exception_stats(request_response_object, request=request,  exception_class=exception_class)
+
 
     def item_stats(self, signal_type=None, item=None, response=None, spider=None):
         if self.sdk_enabled():
@@ -67,6 +70,7 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
             if signal_type == 'item_scraped':
                 self.item_validation_middleware.validate(request_response_object, item)
             self.generate_item_stats(request_response_object, signal=signal_type, response=response)
+
 
     def add_missed_urls_callback(self, request):
         if request.errback is None:
