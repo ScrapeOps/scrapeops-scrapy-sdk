@@ -72,7 +72,9 @@ EXTENSIONS = {
 ```
 
 #### #4 - Enable the ScrapeOps Retry Middleware:
-To get the most accurate stats, you need to add in the ScrapeOps retry middleware into the `DOWNLOADER_MIDDLEWARES` dictionary and disable the default Scrapy Retry middleware `settings.py` file. You can do this by setting the default Scrapy RetryMiddleware to `None` and enabling the ScrapeOps retry middleware in it's place.
+To get the most accurate stats, you need to add in the ScrapeOps retry middleware into the `DOWNLOADER_MIDDLEWARES` dictionary and disable the default Scrapy Retry middleware in your Scrapy project's `settings.py` file. 
+
+You can do this by setting the default Scrapy RetryMiddleware to `None` and enabling the ScrapeOps retry middleware in it's place.
 
 ```python
 DOWNLOADER_MIDDLEWARES = {
