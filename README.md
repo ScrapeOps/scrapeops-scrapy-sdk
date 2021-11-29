@@ -11,6 +11,8 @@ Just enable it in your `settings.py` file and the SDK will automatically monitor
 [:link: ScrapeOps Dashboard Demo](https://scrapeops.io/app/login/demo)
 
 ## :star: Features
+<details>
+<summary>View features</summary>
 
 - **Scrapy Job Stats & Visualisation**
   - :chart_with_upwards_trend: Individual Job Progress Stats
@@ -39,7 +41,8 @@ Just enable it in your `settings.py` file and the SDK will automatically monitor
     - :chart_with_upwards_trend: Monitor Your Proxy Account Usage
     - :chart_with_downwards_trend: Track Your Proxy Providers Performance
     - :bar_chart: Compare Proxy Performance Verus Other Providers
-  
+
+</details>
 
 ## :rocket: Getting Started
 You can get the ScrapeOps monitoring suite up and running in **4 easy steps**.
