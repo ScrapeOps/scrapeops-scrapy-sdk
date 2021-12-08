@@ -6,7 +6,7 @@ Just enable it in your `settings.py` file and the SDK will automatically monitor
 **Full documentation can be found here:** [ScrapeOps Documentation](https://scrapeops.io/docs/intro)
 
 
-![ScrapeOps Dashboard Demo](https://github.com/ScrapeOps/scrapeops-docs/blob/main/assets/scrapeops-hero-page-small.jpg)
+![ScrapeOps Dashboard Demo](https://github.com/ScrapeOps/scrapeops-docs/blob/main/assets/scrapeops-hero-demo.jpg)
 
 
 ## :computer: Demo
