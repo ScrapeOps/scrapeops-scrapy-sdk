@@ -1,5 +1,4 @@
-from typing import Dict
-from scrapy.item import Item
+from itemadapter import ItemAdapter, is_item
 
 class ItemValidator(object):
 
@@ -25,35 +24,35 @@ class ItemValidator(object):
         return 
 
     def validate(self, request_response_object, item):
-        if ItemValidator.ITEM_COVERAGE_ENABLED:
-            self.increment_items()
-            if isinstance(item, Item):
+        if ItemValidator.ITEM_COVERAGE_ENABLED and is_item(item):
+            try:
+                self.increment_items()
+                adapter = ItemAdapter(item)
                 item_name = ItemValidator.get_item_name(item)
-                fields = ItemValidator.get_item_fields(item)
-                field_keys = fields.keys()
-            if isinstance(item, Dict):
-                item_name = 'Unknown'
-                field_keys = item.keys()
-            if item_name is not None and field_keys is not None:
-                domain = request_response_object.get_domain()
-                invalid_fields = []
-                valid_item = True
-                self.check_item_exists(domain, item_name, field_keys)
-                self.item_coverage[domain][item_name]['num_items'] += 1
-                self.increment_total_fields(field_keys)
-                for k in field_keys:
-                    if(item.get(k) is not None and item.get(k) != ''):
-                        self.item_coverage[domain][item_name]['coverage'][k] += 1
-                    else:
-                        valid_item = False
-                        self.increment_invalid_fields()
-                        invalid_fields.append(k)
-                
-                if valid_item is False:
-                    self.item_coverage[domain][item_name]['num_invalid_items'] += 1
-                    self.increment_invalid_items()
-                if ItemValidator.INVALID_ITEM_URLS_LOGGING_ENABLED and len(invalid_fields) > 0:
-                    self.log_invalid_item_url(request_response_object.get_real_url(), item_name, invalid_fields)
+                dict_item = adapter.asdict()
+                field_keys = dict_item.keys()
+                if item_name is not None and field_keys is not None:
+                    domain = request_response_object.get_domain()
+                    invalid_fields = []
+                    valid_item = True
+                    self.check_item_exists(domain, item_name, field_keys)
+                    self.item_coverage[domain][item_name]['num_items'] += 1
+                    self.increment_total_fields(field_keys)
+                    for k in field_keys:
+                        if(dict_item.get(k) is not None and dict_item.get(k) != ''):
+                            self.item_coverage[domain][item_name]['coverage'][k] += 1
+                        else:
+                            valid_item = False
+                            self.increment_invalid_fields()
+                            invalid_fields.append(k)
+                    
+                    if valid_item is False:
+                        self.item_coverage[domain][item_name]['num_invalid_items'] += 1
+                        self.increment_invalid_items()
+                    if ItemValidator.INVALID_ITEM_URLS_LOGGING_ENABLED and len(invalid_fields) > 0:
+                        self.log_invalid_item_url(request_response_object.get_real_url(), item_name, invalid_fields)
+            except Exception:
+                pass
 
 
     def check_item_exists(self, domain, item_name, field_keys):

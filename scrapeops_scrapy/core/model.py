@@ -214,7 +214,7 @@ class SDKData(BaseSDKModel):
                 self.spider_settings[key] = value
 
     def include_setting(self, key):
-        exclusion_terms = ['API_KEY', 'APIKEY', 'SECRET_KEY', 'SECRETKEY']
+        exclusion_terms = ['API_KEY', 'APIKEY', 'SECRET_KEY', 'SECRETKEY', 'PASSWORD', 'CONNECTION_STRING']
         if key in self._scrapeops_settings_exclusion_list:
             return False
         for term in exclusion_terms:

@@ -7,7 +7,7 @@ import time
     
 class SOPSRequest(object):
 
-    TIMEOUT = 5
+    TIMEOUT = 15
     RETRY_LIMIT = 3
     API_KEY = None
     JOB_GROUP_ID = None

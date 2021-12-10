@@ -63,16 +63,16 @@ class BaseRequestResponse(object):
     """
 
     def get_proxy_name(self):
-        return self._proxy_name
+        return self._proxy_name or 'unknown'
     
     def get_proxy_setup(self):
-        return self._proxy_setup
+        return self._proxy_setup or 'unknown'
 
     def get_domain(self):
-        return self._domain
+        return self._domain or 'unknown'
     
     def get_page_type(self):
-        return self._page_type
+        return self._page_type or 'unknown'
 
     def get_proxy_api_name(self):
         return self._proxy_api_name
@@ -84,7 +84,7 @@ class BaseRequestResponse(object):
         return self.raw_proxy_port
 
     def get_real_url(self):
-        return self._real_url
+        return self._real_url or 'unknown'
 
     def get_validation_test(self):
         return self._validation_test or 'pass'
@@ -193,12 +193,13 @@ class RequestResponse(BaseRequestResponse):
     def __init__(self, signal_type=None, request=None, response=None):
         BaseRequestResponse.__init__(self)
         self.signal_type = signal_type
-        self.request = response.request if request is None else request
-        self.raw_url = request.url if response is None else response.url
-        self.raw_proxy_port = self.request.meta.get('proxy') 
-        self.raw_domain = DomainNormalizer.get_domain(self.raw_url)
-        self._active_proxy = self._active_porxy_port = False if self.raw_proxy_port is None else True
-        self.raw_headers = self.request.headers
+        if request is not None or response is not None:
+            self.request = response.request if request is None else request
+            self.raw_url = request.url if response is None else response.url
+            self.raw_proxy_port = self.request.meta.get('proxy') 
+            self.raw_domain = DomainNormalizer.get_domain(self.raw_url)
+            self._active_proxy = self._active_porxy_port = False if self.raw_proxy_port is None else True
+            self.raw_headers = self.request.headers
 
     """
         Domain Normalization

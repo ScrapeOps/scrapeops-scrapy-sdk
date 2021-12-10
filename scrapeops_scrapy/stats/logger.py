@@ -98,7 +98,12 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
 
 
     def generate_item_stats(self, request_response_object, signal=None, response=None):
-        request = response.request
+        if response is not None:
+             request = response.request
+             request_method = request.method
+             status = response.status
+        else: 
+            request_method = status = 'unknown'
         proxy_name = request_response_object.get_proxy_name()
         proxy_setup = request_response_object.get_proxy_setup()
         domain_name = request_response_object.get_domain()
@@ -110,16 +115,16 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
         self.check_periodic_stats()
 
         if signal == 'item_scraped':
-            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items')
-            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items')
+            self.inc_value(self._periodic_stats, f'responses|{request_method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items')
+            self.inc_value(self._overall_stats, f'responses|{request_method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items')
         
         elif signal == 'item_dropped':
-            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items_dropped')
-            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items_dropped')
+            self.inc_value(self._periodic_stats, f'responses|{request_method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items_dropped')
+            self.inc_value(self._overall_stats, f'responses|{request_method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{status}|{validation}|{geo}|{custom_tag}|{custom_signal}|items_dropped')
         
         elif signal == 'item_error':
-            self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
-            self.inc_value(self._overall_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{response.status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
+            self.inc_value(self._periodic_stats, f'responses|{request_method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
+            self.inc_value(self._overall_stats, f'responses|{request_method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{status}|{validation}|{geo}|{custom_tag}|{custom_signal}|item_errors')
 
     
 

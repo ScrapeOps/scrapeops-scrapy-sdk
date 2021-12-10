@@ -36,8 +36,6 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
             self.spider_close_stats(reason=reason, crawler=self.crawler)
             self.send_stats(periodic_stats=self._periodic_stats, overall_stats=self._overall_stats, stats_type='finished', reason=reason)
             self.close_periodic_monitor()
-            if self._scrapeops_debug_mode:
-                self.display_stats()
 
 
     def request_stats(self, request=None):
@@ -66,7 +64,8 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
     def item_stats(self, signal_type=None, item=None, response=None, spider=None):
         if self.sdk_enabled():
             request_response_object = RequestResponse(response=response)
-            self.request_response_middleware.normalise_domain_proxy_data(request_response_object) 
+            if response is not None:
+                self.request_response_middleware.normalise_domain_proxy_data(request_response_object) 
             if signal_type == 'item_scraped':
                 self.item_validation_middleware.validate(request_response_object, item)
             self.generate_item_stats(request_response_object, signal=signal_type, response=response)
