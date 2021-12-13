@@ -142,16 +142,14 @@ class SDKData(BaseSDKModel):
             'periodic_warnings': periodic_stats.get('log_count/WARNING', 0),
             'periodic_errors': periodic_stats.get('log_count/ERROR', 0),
             'periodic_criticals': periodic_stats.get('log_count/CRITICAL', 0),
-            'overall_warnings': overall_stats.get('log_count/WARNING', 0),
-            'overall_errors': overall_stats.get('log_count/ERROR', 0),
-            'overall_criticals': overall_stats.get('log_count/CRITICAL', 0),
             'multi_server': self.multi_server,
             'period_count': self.period_count,
             'data_coverage': self.item_validation_middleware.get_item_coverage_data(),
             'invalid_items_count': self.item_validation_middleware.get_num_invalid_items(),
             'field_coverage': self.item_validation_middleware.get_field_coverage(),
             'failed_urls_count': self.failed_url_middleware.get_url_count(),
-            'failed_urls_enabled': self.failed_url_middleware.enabled()
+            'failed_urls_enabled': self.failed_url_middleware.enabled(),
+            'scrapy_stats': self.get_scrapy_stats(), 
         }
 
         if stats_type == 'finished':
@@ -295,4 +293,8 @@ class SDKData(BaseSDKModel):
         if crawler.settings.get('SCRAPEOPS_EXPORT_SCRAPY_LOGS') is not None:
             return True
         return False
+
+    def get_scrapy_stats(self):
+        scrapy_stats = self.crawler.stats.get_stats()
+        return {k:str(v) for (k,v) in scrapy_stats.items()}
 

@@ -140,9 +140,9 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
         exception_type = ExceptionNormalizer.normalise_exception(exception_class)
         download_latency = request.meta.get('download_latency')
         if download_latency is None:
-            start_time = request.meta.get('sops_time') 
-            download_latency = utils.current_time() - start_time
-            download_latency 
+            start_time = request.meta.get('sops_time', 0) 
+            if start_time != 0: download_latency = utils.current_time() - start_time
+            else: download_latency = 0 
 
         self.check_periodic_stats()
         self.inc_value(self._periodic_stats, f'responses|{request.method}|{proxy_name}|{proxy_setup}|{domain_name}|{page_type}|{exception_type}|{validation}|{geo}|{custom_tag}|{custom_signal}|count')
