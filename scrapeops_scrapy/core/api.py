@@ -176,8 +176,8 @@ class SOPSRequest(object):
         for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
                 response = requests.get(url, timeout=SOPSRequest.TIMEOUT, proxies=proxies, headers={'api_key': SOPSRequest.API_KEY}) 
-                if check and response.status_code == 403:
-                    return None, False, 'close', 'invalid_api_key'
+                if check and response.status_code == 401:
+                    return None, 'invalid_api_key'
                 if response.status_code == 200:
                     data = response.json()
                     return data, None
@@ -203,8 +203,8 @@ class SOPSRequest(object):
         for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
                 response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files, proxies=proxies, headers={'api_key': SOPSRequest.API_KEY}) 
-                if response.status_code == 403:
-                    return None, False, 'close', 'invalid_api_key'
+                if response.status_code == 401:
+                    return None, 'invalid_api_key'
                 if response.status_code == 200:
                     data = response.json()
                     return data, None
@@ -228,8 +228,8 @@ class SOPSRequest(object):
         for _ in range(SOPSRequest.RETRY_LIMIT):
             try:
                 response = requests.post(url, data=body, timeout=SOPSRequest.TIMEOUT, files=files, headers={'api_key': SOPSRequest.API_KEY}) 
-                if response.status_code == 403:
-                    return None, False, 'close', 'invalid_api_key'
+                if response.status_code == 401:
+                    return None, 'invalid_api_key'
                 if response.status_code == 200:
                     data = response.json()
                     return data, None

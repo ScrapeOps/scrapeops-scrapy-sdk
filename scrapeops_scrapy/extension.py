@@ -17,6 +17,7 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         # connect the extension object to signals
         crawler.signals.connect(ext.spider_opened,
                                 signal=signals.spider_opened)
+                                
         crawler.signals.connect(ext.spider_closed,
                                 signal=signals.spider_closed)
 
@@ -26,7 +27,6 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         crawler.signals.connect(ext.log_response,
                                 signal=signals.response_downloaded)
         
-
         crawler.signals.connect(ext.log_response_middleware, 
                                 signal=scrapeops_signals.scrapeops_response_recieved)
 
@@ -42,9 +42,6 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         crawler.signals.connect(ext.item_error, 
                                 signal=signals.item_error)
 
-        crawler.signals.connect(ext.response_rejected, 
-                                signal=scrapeops_signals.scrapeops_response_rejected)
-
         return ext
 
     def spider_opened(self, spider):
@@ -54,28 +51,30 @@ class ScrapeOpsMonitor(ScrapeopsCore):
         self.close_sdk(spider=spider, reason=reason)
 
     def log_request(self, request, spider):
-        self.request_stats(request=request)
+        if self.sdk_enabled():
+            self.request_stats(request=request)
 
     def log_response(self, response, request, spider):
-        if self.scrapeops_middleware_enabled() is False:
+        if self.scrapeops_middleware_enabled() is False and self.sdk_enabled():
             self.response_stats(request=request, response=response)
 
     def log_response_middleware(self, request=None, response=None, spider=None):
-        if self.scrapeops_middleware_enabled():
+        if self.scrapeops_middleware_enabled() and self.sdk_enabled():
             self.response_stats(request=request, response=response)
 
     def log_exception(self, request=None, spider=None, exception_class=None):
-        if self.scrapeops_middleware_enabled():
+        if self.scrapeops_middleware_enabled() and self.sdk_enabled():
             self.exception_stats(request=request, exception_class=exception_class)
         
     def item_scraped(self, item, response, spider): 
-        self.item_stats(signal_type='item_scraped', item=item, response=response, spider=spider) 
+        if self.sdk_enabled():
+            self.item_stats(signal_type='item_scraped', item=item, response=response, spider=spider) 
 
     def item_dropped(self, item, response, spider): 
-        self.item_stats(signal_type='item_dropped', item=item, response=response, spider=spider) 
+        if self.sdk_enabled():
+            self.item_stats(signal_type='item_dropped', item=item, response=response, spider=spider) 
     
     def item_error(self, item, response, spider): 
-        self.item_stats(signal_type='item_error', item=item, response=response, spider=spider) 
+        if self.sdk_enabled():
+            self.item_stats(signal_type='item_error', item=item, response=response, spider=spider) 
 
-    def response_rejected(self, spider=None, response=None, reason=None): 
-        pass
