@@ -36,12 +36,12 @@ class ResponseValidator(object):
                 else: return True
 
             if test.get('test_type') == 'response_length_check':
-                if ResponseValidator.response_length_check(response, test.get('threshold', 0), test.get('comparison_type')):
+                if ResponseValidator.response_length_check(ResponseValidator.get_response_text(response), test.get('threshold', 0), test.get('comparison_type')):
                     fail_counter += 1
                 else: return True
             
             if test.get('test_type') == 'string_check' and test.get('test_location') == 'body':
-                if ResponseValidator.string_check(response, test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
+                if ResponseValidator.string_check(ResponseValidator.get_response_text(response), test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
                     fail_counter += 1
                 else: return True
             
@@ -89,9 +89,16 @@ class ResponseValidator(object):
 
 
     @staticmethod
-    def string_check(response, text_check, comparison, text_slice=None):
-        if text_check == '': return False
-        text = response.text if isinstance(response, Response) else response
+    def get_response_text(response):
+        try:
+            if isinstance(response, Response): return response.text 
+            else: return ''
+        except AttributeError:
+            return ''
+
+
+    @staticmethod
+    def string_check(text, text_check, comparison, text_slice=None):
         if text_slice is not None:
             text = ResponseValidator.string_slice(text, text_slice)
         if comparison == 'contains' and text_check in text:
@@ -99,6 +106,7 @@ class ResponseValidator(object):
         elif comparison == 'not_contain' and text_check not in text:
             return True
         return False
+
 
     @staticmethod
     def string_slice(text, text_slice):
@@ -155,9 +163,9 @@ class ResponseValidator(object):
 
 
     @staticmethod
-    def response_length_check(response, threshold, comparison):
+    def response_length_check(text, threshold, comparison):
         if threshold == 0: return False
-        response_text_length = len(response.text)
+        response_text_length = len(text)
         return ResponseValidator.comparison_operators(response_text_length, threshold, comparison)
     
 

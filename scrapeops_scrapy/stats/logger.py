@@ -176,10 +176,15 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
             self.set_value(self._overall_stats, log_key, log_value)
 
     
+    def exception_type_check(key):
+        if isinstance(key, str):
+            return key.startswith('downloader/exception_type_count/')
+        return False
+    
     def get_exception_stats(self, crawler):
         scrapy_stats = crawler.stats.get_stats()
         if scrapy_stats.get('downloader/exception_count') is not None:
-            exception_values = [ {k:v} for k,v in scrapy_stats.items() if k.startswith('downloader/exception_type_count/')]
+            exception_values = [ {k:v} for k,v in scrapy_stats.items() if self.exception_type_check(k)]
             for exception in exception_values:
                 for key, value in exception.items():
                     key_type = key.replace('downloader/exception_type_count/', '')
@@ -188,8 +193,6 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
                     except Exception:
                         exception_type = key_type
                     self.set_value(self._overall_stats, f'responses|unknown|unknown|unknown|unknown|unknown|{exception_type}|unknown|unknown|unknown|unknown|count', value)
-
-
 
     
 
