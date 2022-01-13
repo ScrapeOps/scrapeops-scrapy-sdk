@@ -176,7 +176,7 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
             self.set_value(self._overall_stats, log_key, log_value)
 
     
-    def exception_type_check(key):
+    def exception_type_check(self, key):
         if isinstance(key, str):
             return key.startswith('downloader/exception_type_count/')
         return False
