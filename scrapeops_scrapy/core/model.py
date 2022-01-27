@@ -52,6 +52,7 @@ class BaseSDKModel(object):
         self.job_group_uuid = None
         self.job_group_name = None
         self.job_group_version = None
+        self.job_custom_groups = None
         self.start_time = None
         self.finish_time = None
         self.server_hostname = None
@@ -117,6 +118,7 @@ class SDKData(BaseSDKModel):
             'sops_server_id': self._scrapeops_server_id,
             'scrapeops_job_start': self._scrapeops_job_start,
             'spider_name': self.spider_name,
+            'job_custom_groups': self.job_custom_groups,
             'server_ip': self.server_ip,
             'server_hostname': self.server_hostname,
             'project_name': self.project_name, 
@@ -150,6 +152,7 @@ class SDKData(BaseSDKModel):
             'failed_urls_count': self.failed_url_middleware.get_url_count(),
             'failed_urls_enabled': self.failed_url_middleware.enabled(),
             'scrapy_stats': self.get_scrapy_stats(), 
+            'job_custom_groups': self.job_custom_groups,
         }
 
         if stats_type == 'finished':
@@ -199,6 +202,13 @@ class SDKData(BaseSDKModel):
         if hasattr(spider, 'sops_test'):
             if spider.sops_test.test_active():
                 self._scrapeops_test_id = spider.sops_test.generate_test_id()
+        
+        if hasattr(spider, 'sops_custom_groups'):
+            if isinstance(spider.sops_custom_groups, dict):
+                clean_dict = {}
+                for k, v in spider.sops_custom_groups.items():
+                    clean_dict[str(k)] = str(v)
+                self.job_custom_groups = clean_dict
 
 
     def get_settings(self, spider):

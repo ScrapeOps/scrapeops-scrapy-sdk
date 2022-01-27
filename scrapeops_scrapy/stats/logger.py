@@ -77,7 +77,7 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
         custom_tag = request_response_object.get_custom_tag()
         custom_signal = 'none'
         reslen = len(response_httprepr(response))
-        total_latency = request.meta['download_latency']
+        total_latency = request.meta.get('download_latency', 0)
 
         ## periodic stats
         self.check_periodic_stats()
@@ -138,7 +138,7 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
         custom_tag = request_response_object.get_custom_tag()
         custom_signal = 'none'
         exception_type = ExceptionNormalizer.normalise_exception(exception_class)
-        download_latency = request.meta.get('download_latency')
+        download_latency = request.meta.get('download_latency', 0)
         if download_latency is None:
             start_time = request.meta.get('sops_time', 0) 
             if start_time != 0: download_latency = utils.current_time() - start_time

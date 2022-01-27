@@ -3,6 +3,7 @@
 from scrapeops_scrapy.utils import utils
 from scrapeops_scrapy.core.setup import SDKSetup
 from scrapeops_scrapy.core.api import SOPSRequest 
+import sys
 
 class SDKControllers(SDKSetup):
 
@@ -82,7 +83,8 @@ class SDKControllers(SDKSetup):
 
     def deactivate_sdk(self, reason=None, error=None, request_type=None, data=None):
         self._sdk_active = False
-        self._error_logger.sdk_error_close(reason=reason, error=error, request_type=request_type)
+        if reason != 'scrapy_shell':
+            self._error_logger.sdk_error_close(reason=reason, error=error, request_type=request_type)
 
     def job_active(self):
         if self.job_id is None and self._sdk_active:
@@ -111,6 +113,12 @@ class SDKControllers(SDKSetup):
         if self._scrapeops_export_scrapy_logs and self.log_file is not None:
             return True
         return False
+    
+    def not_scrapy_shell(self):
+        if sys.argv[0] == 'shell':
+            self.deactivate_sdk(reason='scrapy_shell')
+            return False
+        return True
 
     
     

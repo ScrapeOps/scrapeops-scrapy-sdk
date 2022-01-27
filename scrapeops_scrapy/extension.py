@@ -1,3 +1,4 @@
+from pyparsing import ParseExpression
 from scrapy import signals
 
 from scrapeops_scrapy.core.core import ScrapeopsCore 

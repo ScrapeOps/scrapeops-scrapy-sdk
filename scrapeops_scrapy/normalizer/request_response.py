@@ -18,6 +18,7 @@ class BaseRequestResponse(object):
  
         ## Proxy Checks
         self._active_proxy = None
+        self._active_proxy_port=None
         self._real_url = None
         self._ip_proxy_list = False
         self._named_proxy = False
@@ -175,7 +176,7 @@ class BaseRequestResponse(object):
         return True if self._active_proxy else False
     
     def active_proxy_port(self):
-        return True if self._active_porxy_port else False
+        return True if self._active_proxy_port else False
 
     def active_proxy_api(self):
         return self._proxy_api
@@ -198,7 +199,7 @@ class RequestResponse(BaseRequestResponse):
             self.raw_url = request.url if response is None else response.url
             self.raw_proxy_port = self.request.meta.get('proxy') 
             self.raw_domain = DomainNormalizer.get_domain(self.raw_url)
-            self._active_proxy = self._active_porxy_port = False if self.raw_proxy_port is None else True
+            self._active_proxy = self._active_proxy_port = False if self.raw_proxy_port is None else True
             self.raw_headers = self.request.headers
 
     """

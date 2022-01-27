@@ -8,6 +8,7 @@ from scrapeops_scrapy.stats.logger import StatsLogger
 from scrapeops_scrapy.normalizer.request_response import RequestResponse
 
 
+
 class ScrapeopsCore(SDKControllers, StatsLogger):
     """
         Where the core ScrapeOps Functionality Goes
@@ -18,16 +19,17 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
         StatsLogger.__init__(self)
         
     def start_sdk(self, spider=None, crawler=None):
-        self.start_time = self.period_start_time = utils.current_time()
-        self.initialize_SDK(spider, crawler=crawler)
-        if self.check_api_key_present():
-            self.send_setup_request()
-            self.spider_open_stats()
-            self.start_periodic_monitor()
-        else:
-            err = ScrapeOpsMissingAPIKey()
-            self.deactivate_sdk(reason='no_api_key', error=err)
-            raise err
+        if self.not_scrapy_shell():
+            self.start_time = self.period_start_time = utils.current_time()
+            self.initialize_SDK(spider, crawler=crawler)
+            if self.check_api_key_present():
+                self.send_setup_request()
+                self.spider_open_stats()
+                self.start_periodic_monitor()
+            else:
+                err = ScrapeOpsMissingAPIKey()
+                self.deactivate_sdk(reason='no_api_key', error=err)
+                raise err
     
 
     def close_sdk(self, spider=None, reason=None):
@@ -74,6 +76,8 @@ class ScrapeopsCore(SDKControllers, StatsLogger):
     def add_missed_urls_callback(self, request):
         if request.errback is None:
             request.errback = self.failed_url_middleware.log_failure
+    
+    
             
     """
         PERIODIC MONITOR
