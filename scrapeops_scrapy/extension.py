@@ -1,8 +1,10 @@
 from pyparsing import ParseExpression
 from scrapy import signals
+import logging
 
 from scrapeops_scrapy.core.core import ScrapeopsCore 
 from scrapeops_scrapy.signals import scrapeops_signals
+from scrapeops_scrapy.core.error_logger import TailLogger
 
 
 class ScrapeOpsMonitor(ScrapeopsCore):
@@ -10,6 +12,11 @@ class ScrapeOpsMonitor(ScrapeopsCore):
     def __init__(self, crawler):
         ScrapeopsCore.__init__(self)
         self.crawler = crawler
+
+        self.tail = TailLogger()
+        log_handler = self.tail.log_handler
+        logging.getLogger().addHandler(log_handler)
+        
 
     @classmethod
     def from_crawler(cls, crawler):

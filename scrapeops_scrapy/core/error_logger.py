@@ -1,5 +1,7 @@
 from scrapeops_scrapy.core.api import SOPSRequest 
 from scrapeops_scrapy.utils import utils
+import json
+import logging
 
 class ErrorLogger(object):
 
@@ -84,4 +86,56 @@ class ErrorLogger(object):
 
          
 
+class TailLogHandler(logging.Handler):
 
+    def __init__(self, log_dict):
+        logging.Handler.__init__(self)
+        self.log_dict = log_dict
+
+    def emit(self, record):
+        try:
+            if(record.levelname == "ERROR" or record.levelname == "WARNING" or record.levelname == "CRITICAL"):
+
+                errorMessage = record.message
+                fileAndLine = record.pathname + ', line: ' + str(record.lineno)
+                dateTime = record.asctime
+                type = record.levelname
+                
+                if(type == "WARNING"):
+                    traceback = 'No traceback'
+                else:
+                    traceback = record.exc_text
+                
+                if record.message in self.log_dict:
+                    self.log_dict[record.message]['count'] = self.log_dict[record.message]['count'] + 1
+                else:
+                    self.log_dict[record.message] = {
+                        'type': type,
+                        'engine': record.name,
+                        'name': record.message,
+                        'count': 1, 
+                        'traceback': traceback, 
+                        'message' : errorMessage, 
+                        'filepath': fileAndLine, 
+                        'dateTime': dateTime
+                        }
+
+        except Exception:
+            pass
+
+
+class TailLogger(object):
+
+    def __init__(self):
+        self._log_dict = {}
+        self._log_handler = TailLogHandler(self._log_dict)
+        
+
+    def contents(self):
+        #converting to json 
+        jsonLogs = json.dumps(self._log_dict, indent= 2)
+        return jsonLogs
+
+    @property
+    def log_handler(self):
+        return self._log_handler
