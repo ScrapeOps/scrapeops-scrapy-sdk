@@ -153,6 +153,7 @@ class SDKData(BaseSDKModel):
             'failed_urls_enabled': self.failed_url_middleware.enabled(),
             'scrapy_stats': self.get_scrapy_stats(), 
             'job_custom_groups': self.job_custom_groups,
+            'error_details': self.tail.contents(),
         }
 
         if stats_type == 'finished':
