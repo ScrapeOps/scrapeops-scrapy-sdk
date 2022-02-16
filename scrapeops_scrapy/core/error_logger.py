@@ -88,41 +88,82 @@ class ErrorLogger(object):
 
 class TailLogHandler(logging.Handler):
 
+    retryErrors = [
+        "Couldn't bind",
+        "Hostname couldn't be looked up'"
+        "No route to host",
+        "Connection was refused by other side",
+        "TCP connection timed out",
+        "File used for UNIX socket is no good",
+        "Service name given as port is unknown",
+        "User aborted connection",
+        "User timeout caused connection failure",
+        "An SSL error occurred",
+        "Could not verify something that was supposed to be signed.",
+        "The peer rejected our verify error.",
+        "We did not find a certificate where we expected to find one.",
+    ]
+
     def __init__(self, log_dict):
         logging.Handler.__init__(self)
         self.log_dict = log_dict
 
+    def flush(self):
+        self.log_dict.clear()
+        
+
     def emit(self, record):
+
         try:
+           
             if(record.levelname == "ERROR" or record.levelname == "WARNING" or record.levelname == "CRITICAL"):
 
                 errorMessage = record.message
                 fileAndLine = record.pathname + ', line: ' + str(record.lineno)
                 dateTime = record.asctime
                 type = record.levelname
-                
-                if(type == "WARNING"):
-                    traceback = 'No traceback'
-                else:
+                engine = record.name
+
+
+                #covering warnings/probableCause/traceback missing
+                traceback = 'No traceback available'
+                probableCause = ''
+
+                if record.exc_text is not None:
                     traceback = record.exc_text
+                    splitTraceback = traceback.split('\n')
+                    probableCause = splitTraceback[len(splitTraceback) - 1]
+
+
+                #covering retrys
+                if("Gave up retrying <GET" in record.message):
+
+                    for retryError in self.retryErrors:
+                        if(retryError in record.message):
+                            
+                            errorMessage = "Error: Gave up retrying GET request - " + retryError
+                            fileAndLine = ''
+                            probableCause = retryError
+                            break
+
                 
-                if record.message in self.log_dict:
-                    self.log_dict[record.message]['count'] = self.log_dict[record.message]['count'] + 1
+                if errorMessage in self.log_dict:
+                    self.log_dict[errorMessage]['count'] = self.log_dict[errorMessage]['count'] + 1
                 else:
-                    self.log_dict[record.message] = {
+                    self.log_dict[errorMessage] = {
                         'type': type,
-                        'engine': record.name,
-                        'name': record.message,
+                        'engine': engine,
+                        'name': errorMessage,
                         'count': 1, 
                         'traceback': traceback, 
-                        'message' : errorMessage, 
+                        'message' : probableCause, 
                         'filepath': fileAndLine, 
                         'dateTime': dateTime
                         }
-
-        except Exception:
-            pass
-
+                        
+        except Exception as e:
+            logging.info('Error: Error in error logger')
+            logging.info(e, exc_info=True)
 
 class TailLogger(object):
 
@@ -132,10 +173,13 @@ class TailLogger(object):
         
 
     def contents(self):
-        #converting to json 
         jsonLogs = json.dumps(self._log_dict, indent= 2)
+
+        self._log_handler.flush()
+
         return jsonLogs
 
     @property
     def log_handler(self):
         return self._log_handler
+
