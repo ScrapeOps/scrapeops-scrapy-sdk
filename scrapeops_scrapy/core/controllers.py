@@ -39,7 +39,6 @@ class SDKControllers(SDKSetup):
 
         ## retest if job is inactive
         if self.job_active() is False:
-            self.failed_periods += 1
             self.cache_failed_stats(post_body)
             self._error_logger.log_error(reason=f'sending_{stats_type}_stats_failure', 
                                         data={'failed_periods': self.failed_periods})
@@ -55,15 +54,11 @@ class SDKControllers(SDKSetup):
             if status.valid:
                 self.update_sdk_settings(data) 
                 self.reset_failed_stats()
-            elif status.action == 'retry' and self.failed_periods < 3:
-                self.failed_periods += 1
+            elif status.action == 'retry':
                 self.cache_failed_stats(post_body)
                 self._error_logger.log_error(reason=f'sending_{stats_type}_stats_failure', 
                                             error=status.error, 
-                                            data={'failed_periods': self.failed_periods})
-            else:
-                self.deactivate_sdk(reason=f'sending_{stats_type}_stats_failure', error=status.error,
-                                    data={'failed_periods': self.failed_periods}, request_type=stats_type)   
+                                            data={'failed_periods': self.failed_periods})  
 
 
     def sdk_enabled(self):
