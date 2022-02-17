@@ -102,6 +102,19 @@ class TailLogHandler(logging.Handler):
         "Could not verify something that was supposed to be signed.",
         "The peer rejected our verify error.",
         "We did not find a certificate where we expected to find one.",
+        "Bad Request",
+        "Unauthorized",
+        "Payment Required",
+        "Forbidden",
+        "Not Found",
+        "Method Not Allowed",
+        "Request Time-out",
+        "Internal Server Error",
+        "Bad Gateway",
+        "Service Unavailable",
+        "HTTP Version not supported",
+        "Gateway Time-out",
+        "Unknown Status",
     ]
 
     def __init__(self, log_dict):
