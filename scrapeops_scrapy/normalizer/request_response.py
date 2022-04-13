@@ -50,6 +50,7 @@ class BaseRequestResponse(object):
         self._validation_test = None
         self._geo = None
         self._custom_tag = None 
+        self.json_response_keys = []
 
         ## Final
         self._domain = None
@@ -143,6 +144,14 @@ class BaseRequestResponse(object):
         if self._normalized_proxy_port_header_string is not None:
             return f' -H {self._normalized_proxy_port_header_string}'
         return ''
+
+    def is_json_response(self):
+        if len(self.json_response_keys) > 0:
+            return True
+        return False
+    
+    def get_json_response_keys(self):
+        return self.json_response_keys
 
 
     """
@@ -329,6 +338,7 @@ class RequestResponse(BaseRequestResponse):
         self._proxy_type = 'proxy_api'
         self._proxy_name = self._proxy_api_name = proxy_details.get('proxy_name')
         self._proxy_setup = self.proxy_api_setup(proxy_details) ## into new file
+        self.json_response_keys = proxy_details.get('json_response_keys', [])
 
 
     def proxy_api_setup(self, proxy_details):

@@ -1,6 +1,7 @@
 from scrapy.utils.response import response_httprepr
 from scrapy.http import Response
 from random import randint
+import json
 
 class ResponseValidator(object):
 
@@ -11,19 +12,19 @@ class ResponseValidator(object):
     def validate(request_response_object, response, domain_tests=None, generic_tests=None, geotargeting_tests=None):
         if domain_tests is not None:
             for test in domain_tests:
-                if ResponseValidator.run_validation_test(response, test.get('validation_tests', [])) is False:
+                if ResponseValidator.run_validation_test(request_response_object, response, test.get('validation_tests', [])) is False:
                     request_response_object.failed_validation_test(test)
                     break
         
         if generic_tests is not None:
             for test in generic_tests:
-                if ResponseValidator.run_validation_test(response, test.get('validation_tests', [])) is False:
+                if ResponseValidator.run_validation_test(request_response_object, response, test.get('validation_tests', [])) is False:
                     request_response_object.failed_validation_test(test)
                     break
 
 
     @staticmethod
-    def run_validation_test(response, test_array):
+    def run_validation_test(request_response_object, response, test_array):
         """
         Returns True if test is passed, False if test is failed.
         """
@@ -36,12 +37,12 @@ class ResponseValidator(object):
                 else: return True
 
             if test.get('test_type') == 'response_length_check':
-                if ResponseValidator.response_length_check(ResponseValidator.get_response_text(response), test.get('threshold', 0), test.get('comparison_type')):
+                if ResponseValidator.response_length_check(ResponseValidator.get_response_text(request_response_object, response), test.get('threshold', 0), test.get('comparison_type')):
                     fail_counter += 1
                 else: return True
             
             if test.get('test_type') == 'string_check' and test.get('test_location') == 'body':
-                if ResponseValidator.string_check(ResponseValidator.get_response_text(response), test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
+                if ResponseValidator.string_check(ResponseValidator.get_response_text(request_response_object, response), test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
                     fail_counter += 1
                 else: return True
             
@@ -50,16 +51,6 @@ class ResponseValidator(object):
 
             if test.get('test_type') == 'string_check' and test.get('test_location') == 'url':
                 if ResponseValidator.string_check(response.url, test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
-                    fail_counter += 1
-                else: return True
-
-            if test.get('test_type') == 'xpath_check' and test.get('test_location') == 'body':
-                if ResponseValidator.xpath_check(response, test.get('xpath_selector', ''), test.get('text_check', ''), test.get('comparison_type')):
-                    fail_counter += 1
-                else: return True
-            
-            if test.get('test_type') == 'css_selector_check' and test.get('test_location') == 'body':
-                if ResponseValidator.css_selector_check(response, test.get('css_selector', ''), test.get('text_check', ''), test.get('comparison_type')):
                     fail_counter += 1
                 else: return True
 
@@ -89,9 +80,16 @@ class ResponseValidator(object):
 
 
     @staticmethod
-    def get_response_text(response):
+    def get_response_text(request_response_object, response):
         try:
-            if isinstance(response, Response): return response.text 
+            if isinstance(response, Response): 
+                if request_response_object.is_json_response():
+                    json_response = json.loads(response.text)
+                    json_response_keys = request_response_object.get_json_response_keys()
+                    for key in json_response_keys:
+                        json_response = json_response.get(key)
+                    return json_response or ''    
+                return response.text 
             else: return ''
         except AttributeError:
             return ''
@@ -114,47 +112,12 @@ class ResponseValidator(object):
             if text_slice.get('slice_type') == 'first':
                 return text[:text_slice.get('slice_upper_threshold', len(text))]
             if text_slice.get('slice_type') == 'last':
-                return text[text_slice.get('slice_lower_threshold', 0):]
+                return text[-text_slice.get('slice_lower_threshold', 0)]
             if text_slice.get('slice_type') == 'range':
                 return text[text_slice.get('slice_lower_threshold', 0):text_slice.get('slice_upper_threshold', len(text))]
         return text
 
-
-    @staticmethod
-    def xpath_check(response, xpath_selector, text_check, comparison):
-        if xpath_selector == '' or text_check == '': return False
-        if comparison == 'equals':
-            if response.xpath(xpath_selector).get() == text_check:
-                return True
-        elif comparison == 'not_equal':
-            if response.xpath(xpath_selector).get() != text_check:
-                return True
-        elif comparison == 'contains':
-            text = response.xpath(xpath_selector).get()
-            return ResponseValidator.string_check(text, text_check, comparison)
-        elif comparison == 'not_contain':
-            text = response.xpath(xpath_selector).get()
-            return ResponseValidator.string_check(text, text_check, comparison)
-        return False
-
-
-    @staticmethod
-    def css_selector_check(response, css_selector, text_check, comparison):
-        if comparison == 'equals':
-            if response.css(css_selector).get() == text_check:
-                return True
-        elif comparison == 'not_equal':
-            if response.css(css_selector).get() != text_check:
-                return True
-        elif comparison == 'contains':
-            text = response.css(css_selector).get()
-            return ResponseValidator.string_check(text, text_check, comparison)
-        elif comparison == 'not_contain':
-            text = response.css(css_selector).get()
-            return ResponseValidator.string_check(text, text_check, comparison)
-        return False
     
-
     @staticmethod
     def bytes_check(response, threshold, comparison):
         if threshold == 0: return False
