@@ -1,5 +1,5 @@
-from scrapy.utils.response import response_httprepr
 from scrapy.http import Response
+from scrapy.downloadermiddlewares.stats import get_header_size, get_status_size
 from random import randint
 import json
 
@@ -121,7 +121,7 @@ class ResponseValidator(object):
     @staticmethod
     def bytes_check(response, threshold, comparison):
         if threshold == 0: return False
-        reslen = len(response_httprepr(response))
+        reslen = len(response.body) + get_header_size(response.headers) + get_status_size(response.status) + 4
         return ResponseValidator.comparison_operators(reslen, threshold, comparison)
 
 

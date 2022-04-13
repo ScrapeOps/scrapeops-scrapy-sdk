@@ -1,6 +1,6 @@
 ## scrapy
 from scrapy.utils.request import request_httprepr
-from scrapy.utils.response import response_httprepr
+from scrapy.downloadermiddlewares.stats import get_header_size, get_status_size
 
 ## scrapeops
 from scrapeops_scrapy.stats.model import OverallStatsModel, PeriodicStatsModel 
@@ -76,7 +76,7 @@ class StatsLogger(OverallStatsModel, PeriodicStatsModel):
         geo = request_response_object.get_geo()
         custom_tag = request_response_object.get_custom_tag()
         custom_signal = 'none'
-        reslen = len(response_httprepr(response))
+        reslen = len(response.body) + get_header_size(response.headers) + get_status_size(response.status) + 4
         total_latency = request.meta.get('download_latency', 0)
 
         ## periodic stats
