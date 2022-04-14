@@ -50,7 +50,7 @@ class ResponseValidator(object):
                 pass
 
             if test.get('test_type') == 'string_check' and test.get('test_location') == 'url':
-                if ResponseValidator.string_check(response.url, test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
+                if ResponseValidator.string_check(request_response_object.get_real_url(), test.get('text_check', ''), test.get('comparison_type'), text_slice=test.get('text_slice')):
                     fail_counter += 1
                 else: return True
 
@@ -97,12 +97,13 @@ class ResponseValidator(object):
 
     @staticmethod
     def string_check(text, text_check, comparison, text_slice=None):
-        if text_slice is not None:
-            text = ResponseValidator.string_slice(text, text_slice)
-        if comparison == 'contains' and text_check in text:
-            return True
-        elif comparison == 'not_contain' and text_check not in text:
-            return True
+        if isinstance(text, str):
+            if text_slice is not None:
+                text = ResponseValidator.string_slice(text, text_slice)
+            if comparison == 'contains' and text_check in text:
+                return True
+            elif comparison == 'not_contain' and text_check not in text:
+                return True
         return False
 
 
