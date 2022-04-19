@@ -1,5 +1,6 @@
 import socket
 import scrapy.settings.default_settings as default_settings
+from scrapeops_scrapy.core.api import SOPSRequest
 
 
 class BaseSDKModel(object):
@@ -154,6 +155,8 @@ class SDKData(BaseSDKModel):
             'scrapy_stats': self.get_scrapy_stats(), 
             'job_custom_groups': self.job_custom_groups,
             'error_details': self.tail.contents(),
+            'error_details_cumulative': self.tail.contents('cumulative'),
+            'high_freq': SOPSRequest.HIGH_FREQ_ACC
         }
 
         if stats_type == 'finished':

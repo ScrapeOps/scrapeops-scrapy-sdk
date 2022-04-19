@@ -1,5 +1,5 @@
 from scrapy.http import Response
-from scrapy.downloadermiddlewares.stats import get_header_size, get_status_size
+from scrapeops_scrapy.utils.utils import get_header_size, get_status_size
 from random import randint
 import json
 

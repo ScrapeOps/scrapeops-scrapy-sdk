@@ -6,6 +6,9 @@ import scrapeops_scrapy
 import platform
 
 from scrapeops_scrapy.utils.error_handling import exception_handler
+from scrapy.utils.python import to_bytes
+from twisted.web import http
+
 
 def current_time():
     t = time.time()
@@ -66,6 +69,17 @@ def merge_dicts(x, y):
     z.update(y)
     return z
 
+# from scrapy
+def get_header_size(headers):
+    size = 0
+    for key, value in headers.items():
+        if isinstance(value, (list, tuple)):
+            for v in value:
+                size += len(b": ") + len(key) + len(v)
+    return size + len(b'\r\n') * (len(headers.keys()) - 1)
 
 
+def get_status_size(response_status):
+    return len(to_bytes(http.RESPONSES.get(response_status, b''))) + 15
+    # resp.status + b"\r\n" + b"HTTP/1.1 <100-599> "
 

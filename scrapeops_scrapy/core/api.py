@@ -14,6 +14,7 @@ class SOPSRequest(object):
     SCRAPEOPS_ENDPOINT = 'https://api.scrapeops.io/'
     SCRAPEOPS_API_VERSION = 'api/v1/'
     SCRAPEOPS_LOGGING_DATA = None
+    HIGH_FREQ_ACC = True
 
     def __init__(self):
         self.data = None

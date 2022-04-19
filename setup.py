@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 
-VERSION = '0.4.7'
+VERSION = '0.4.9'
 DESCRIPTION = 'Scrapeops Scrapy SDK, is a monitoring tool for your Scrapy spiders.'
 
 setup(name='scrapeops_scrapy',

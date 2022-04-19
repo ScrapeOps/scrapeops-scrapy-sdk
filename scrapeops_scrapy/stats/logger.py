@@ -1,11 +1,11 @@
 ## scrapy
 from scrapy.utils.request import request_httprepr
-from scrapy.downloadermiddlewares.stats import get_header_size, get_status_size
 
 ## scrapeops
 from scrapeops_scrapy.stats.model import OverallStatsModel, PeriodicStatsModel 
 from scrapeops_scrapy.utils import utils
 from scrapeops_scrapy.normalizer.exceptions import ExceptionNormalizer
+from scrapeops_scrapy.utils.utils import get_header_size, get_status_size
 
 import copy
 
