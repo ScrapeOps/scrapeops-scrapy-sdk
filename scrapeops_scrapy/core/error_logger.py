@@ -204,7 +204,7 @@ class TailLogger(object):
         self._log_dict_cumulative = {}
         self._log_handler = TailLogHandler(self._log_dict, self._log_dict_cumulative)
 
-    def contents(self, type = "cumulative"):
+    def contents(self, type = "diff"):
 
         if(type == "cumulative"):
             jsonLogsCumulative = json.dumps(self._log_dict_cumulative, indent= 2)
