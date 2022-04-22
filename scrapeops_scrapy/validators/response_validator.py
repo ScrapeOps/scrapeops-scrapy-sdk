@@ -72,7 +72,7 @@ class ResponseValidator(object):
     def failed_scan(request_response_object, domains):
         domain_details = domains.get(request_response_object.get_domain()) 
         if domain_details is not None:
-            failed_scan_ratio = domain_details.get('failed_generic_scan')
+            failed_scan_ratio = domain_details.get('failed_generic_scan', 0)
             if failed_scan_ratio == 0: return False
             if failed_scan_ratio == 1: return True
             if randint(1, failed_scan_ratio) == 1: return True
