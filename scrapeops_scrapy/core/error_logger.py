@@ -1,7 +1,9 @@
 from scrapeops_scrapy.core.api import SOPSRequest 
+from scrapeops_scrapy.normalizer.domains import DomainNormalizer
 from scrapeops_scrapy.utils import utils
 import json
 import logging
+import re
 
 class ErrorLogger(object):
 
@@ -151,17 +153,39 @@ class TailLogHandler(logging.Handler):
 
 
                 #covering retrys
-                if("Gave up retrying <GET" in record.message):
+                if("Gave up retrying <" in record.message):
 
                     for retryError in self.retryErrors:
                         if(retryError in record.message):
-                            
-                            errorMessage = "Error: Gave up retrying GET request - " + retryError
+                            method = record.message.split('<')[1].split(' ')[0]
+                            errorMessage = "Error: Gave up retrying " + method + " request - " + retryError
                             fileAndLine = ''
                             probableCause = retryError
                             break
-
                 
+                # Deprecation Warnings
+                if "ScrapyDeprecationWarning:" in record.message and record.message[0] == "/":
+                    splitString = record.message.split("ScrapyDeprecationWarning:")
+                    errorMessage = "ScrapyDeprecationWarning: " + splitString[1]
+                    probableCause = splitString[0]
+
+
+                # "Some Other Error Occurred"
+                if "Some other error occurred: " in record.message: 
+                    splitError = record.message.split(' /')
+                    cleanError = splitError[0].split(">: ")[1]
+                    errorMessage = "Some other error occurred: " + cleanError
+                    probableCause = cleanError
+                    traceback = record.message
+
+
+                # Convert Urls To Domains in Error Messages
+                urls = re.findall(r'(https?://[^\s]+)', errorMessage)
+                for url in urls:
+                    domain = DomainNormalizer.get_domain(url)
+                    errorMessage = errorMessage.replace(url, domain)
+
+
                 if errorMessage in self.log_dict:
                     self.log_dict[errorMessage]['count'] = self.log_dict[errorMessage]['count'] + 1
                 else:

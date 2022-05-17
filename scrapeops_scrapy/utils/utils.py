@@ -1,3 +1,4 @@
+import re
 import time
 import sys
 import sys
@@ -82,4 +83,9 @@ def get_header_size(headers):
 def get_status_size(response_status):
     return len(to_bytes(http.RESPONSES.get(response_status, b''))) + 15
     # resp.status + b"\r\n" + b"HTTP/1.1 <100-599> "
+
+
+def remove_url(string, replacement=""):
+    return re.sub(r'http\S+', replacement, string)
+
 
