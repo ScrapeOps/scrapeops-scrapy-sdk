@@ -26,6 +26,7 @@ class SDKSetup(SDKData):
         self.retry_times = crawler.settings.get('RETRY_TIMES', None) 
         self.log_file = crawler.settings.get('LOG_FILE', None) 
         self.allowed_response_codes = crawler.settings.get('HTTPERROR_ALLOWED_CODES', []) 
+        self._scrapeops_settings_exclusion_list = crawler.settings.get('SCRAPEOPS_SETTINGS_EXCLUSION_LIST', [])
         self.check_spider_attributes(spider)
         self.get_settings(spider)
 
@@ -48,7 +49,6 @@ class SDKSetup(SDKData):
         self._scrapeops_job_start = crawler.settings.get('SCRAPEOPS_JOB_START', utils.current_time()) ## Multi-server
         self._scrapeops_server_id = crawler.settings.get('SCRAPEOPS_SERVER_ID', "-1")
         self._scrapeops_debug_mode = crawler.settings.get('SCRAPEOPS_DEBUG_MODE', False)
-        self._scrapeops_settings_exclusion_list = crawler.settings.get('SCRAPEOPS_SETTINGS_EXCLUSION_LIST', [])
         self._scrapeops_export_scrapy_logs = self.get_export_logs(crawler) 
 
         ## SOPS API
