@@ -110,9 +110,9 @@ class ResponseValidator(object):
     @staticmethod
     def string_slice(text, text_slice):
         if text_slice.get('active'):
-            if text_slice.get('slice_type') == 'first':
+            if (text_slice.get('slice_type') == 'first') and (len(text) > 0):
                 return text[:text_slice.get('slice_upper_threshold', len(text))]
-            if text_slice.get('slice_type') == 'last':
+            if (text_slice.get('slice_type') == 'last') and (len(text) > 0):
                 return text[-text_slice.get('slice_lower_threshold', 0)]
             if text_slice.get('slice_type') == 'range':
                 return text[text_slice.get('slice_lower_threshold', 0):text_slice.get('slice_upper_threshold', len(text))]

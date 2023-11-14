@@ -134,79 +134,63 @@ class TailLogHandler(logging.Handler):
         try:
            
             if(record.levelname == "ERROR" or record.levelname == "WARNING" or record.levelname == "CRITICAL"):
-
-                errorMessage = record.message
-                fileAndLine = record.pathname + ', line: ' + str(record.lineno)
-                dateTime = record.asctime
-                type = record.levelname
-                engine = record.name
-
-
-                #covering warnings/probableCause/traceback missing
-                traceback = 'No traceback available'
-                probableCause = ''
-
-                if record.exc_text is not None:
-                    traceback = record.exc_text
-                    splitTraceback = traceback.split('\n')
-                    probableCause = splitTraceback[len(splitTraceback) - 1]
+     
+                if hasattr(record, 'message'):
+                    errorMessage = record.message
+                    fileAndLine = record.pathname + ', line: ' + str(record.lineno)
+                    dateTime = record.asctime
+                    type = record.levelname
+                    engine = record.name
 
 
-                #covering retrys
-                if("Gave up retrying <" in record.message):
+                    #covering warnings/probableCause/traceback missing
+                    traceback = 'No traceback available'
+                    probableCause = ''
 
-                    for retryError in self.retryErrors:
-                        if(retryError in record.message):
-                            method = record.message.split('<')[1].split(' ')[0]
-                            errorMessage = "Error: Gave up retrying " + method + " request - " + retryError
-                            fileAndLine = ''
-                            probableCause = retryError
-                            break
-                
-                # Deprecation Warnings
-                if "ScrapyDeprecationWarning:" in record.message and record.message[0] == "/":
-                    splitString = record.message.split("ScrapyDeprecationWarning:")
-                    errorMessage = "ScrapyDeprecationWarning: " + splitString[1]
-                    probableCause = splitString[0]
+                    if record.exc_text is not None:
+                        traceback = record.exc_text
+                        splitTraceback = traceback.split('\n')
+                        probableCause = splitTraceback[len(splitTraceback) - 1]
 
 
-                # "Some Other Error Occurred"
-                if "Some other error occurred: " in record.message: 
-                    splitError = record.message.split(' /')
-                    cleanError = splitError[0].split(">: ")[1]
-                    errorMessage = "Some other error occurred: " + cleanError
-                    probableCause = cleanError
-                    traceback = record.message
+                    #covering retrys
+                    if("Gave up retrying <" in record.message):
+
+                        for retryError in self.retryErrors:
+                            if(retryError in record.message):
+                                method = record.message.split('<')[1].split(' ')[0]
+                                errorMessage = "Error: Gave up retrying " + method + " request - " + retryError
+                                fileAndLine = ''
+                                probableCause = retryError
+                                break
+                    
+                    # Deprecation Warnings
+                    if "ScrapyDeprecationWarning:" in record.message and record.message[0] == "/":
+                        splitString = record.message.split("ScrapyDeprecationWarning:")
+                        errorMessage = "ScrapyDeprecationWarning: " + splitString[1]
+                        probableCause = splitString[0]
 
 
-                # Convert Urls To Domains in Error Messages
-                urls = re.findall(r'(https?://[^\s]+)', errorMessage)
-                for url in urls:
-                    domain = DomainNormalizer.get_domain(url)
-                    errorMessage = errorMessage.replace(url, domain)
+                    # "Some Other Error Occurred"
+                    if "Some other error occurred: " in record.message: 
+                        splitError = record.message.split(' /')
+                        cleanError = splitError[0].split(">: ")[1]
+                        errorMessage = "Some other error occurred: " + cleanError
+                        probableCause = cleanError
+                        traceback = record.message
 
 
-                if errorMessage in self.log_dict:
-                    self.log_dict[errorMessage]['count'] = self.log_dict[errorMessage]['count'] + 1
-                else:
-                    self.log_dict[errorMessage] = {
-                        'type': type,
-                        'engine': engine,
-                        'name': errorMessage,
-                        'count': 1, 
-                        'traceback': traceback, 
-                        'message' : probableCause, 
-                        'filepath': fileAndLine, 
-                        'dateTime': dateTime
-                        }
+                    # Convert Urls To Domains in Error Messages
+                    urls = re.findall(r'(https?://[^\s]+)', errorMessage)
+                    for url in urls:
+                        domain = DomainNormalizer.get_domain(url)
+                        errorMessage = errorMessage.replace(url, domain)
 
-                if(SOPSRequest.HIGH_FREQ_ACC == True):
 
-                    if(errorMessage in self.log_dict_cumulative):
-                        self.log_dict_cumulative[errorMessage]['count'] = self.log_dict_cumulative[errorMessage]['count'] + 1
+                    if errorMessage in self.log_dict:
+                        self.log_dict[errorMessage]['count'] = self.log_dict[errorMessage]['count'] + 1
                     else:
-
-                        self.log_dict_cumulative[errorMessage] =  {
+                        self.log_dict[errorMessage] = {
                             'type': type,
                             'engine': engine,
                             'name': errorMessage,
@@ -215,7 +199,24 @@ class TailLogHandler(logging.Handler):
                             'message' : probableCause, 
                             'filepath': fileAndLine, 
                             'dateTime': dateTime
-                        }
+                            }
+
+                    if(SOPSRequest.HIGH_FREQ_ACC == True):
+
+                        if(errorMessage in self.log_dict_cumulative):
+                            self.log_dict_cumulative[errorMessage]['count'] = self.log_dict_cumulative[errorMessage]['count'] + 1
+                        else:
+
+                            self.log_dict_cumulative[errorMessage] =  {
+                                'type': type,
+                                'engine': engine,
+                                'name': errorMessage,
+                                'count': 1, 
+                                'traceback': traceback, 
+                                'message' : probableCause, 
+                                'filepath': fileAndLine, 
+                                'dateTime': dateTime
+                            }
                         
         except Exception as e:
             logging.info('Error: Error in error logger')

@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 
-VERSION = '0.5.3'
+VERSION = '0.5.4'
 DESCRIPTION = 'Scrapeops Scrapy SDK, is a monitoring tool for your Scrapy spiders.'
 
 setup(name='scrapeops_scrapy',
@@ -14,23 +14,22 @@ setup(name='scrapeops_scrapy',
       url="https://github.com/ScrapeOps/scrapeops-scrapy-sdk",
       packages=find_packages(),
       install_requires=[
-          "tld>=0.12.4",
-          "requests>=2.24.0",
-          "json5>=0.9.5",
-          "urllib3>=1.25.10",
-          "itemadapter>=0.4.0",
+          "tld>=0.13",
+          "requests>=2.31.0",
+          "json5>=0.9.13",
+          "urllib3>=2.1",
+          "itemadapter>=0.8.0",
           ],
       classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "License :: OSI Approved :: BSD License",
         "Operating System :: OS Independent",
         "Intended Audience :: Developers",
       ],
-      python_requires=">=3.6",
+      python_requires=">=3.8",
       )
