@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
 
-VERSION = '0.5.4'
+VERSION = '0.5.6'
 DESCRIPTION = 'Scrapeops Scrapy SDK, is a monitoring tool for your Scrapy spiders.'
 
 setup(name='scrapeops_scrapy',
@@ -15,9 +15,10 @@ setup(name='scrapeops_scrapy',
       packages=find_packages(),
       install_requires=[
           "tld>=0.13",
-          "requests>=2.31.0",
+          "requests>=2.32.0",
           "json5>=0.9.13",
-          "urllib3>=2.1",
+          # The latest version of requests (2.29.0) does not support urllib3 2.0.0 #6432 - https://github.com/psf/requests/issues/6432
+          "urllib3>=1.26.14", 
           "itemadapter>=0.8.0",
           ],
       classifiers=[
