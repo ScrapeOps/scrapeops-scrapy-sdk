@@ -216,14 +216,43 @@ class SDKData(BaseSDKModel):
 
 
     def get_settings(self, spider):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         default_scrapy_settings = default_settings.__dict__
         full_settings = spider.settings.copy_to_dict()
         self.spider_settings = {}
+        non_serializable_settings = []
+        
         for key, value in full_settings.items():
             if key not in default_scrapy_settings and self.include_setting(key):
-                self.spider_settings[key] = value
+                if self._is_serializable(value):
+                    self.spider_settings[key] = value
+                else:
+                    non_serializable_settings.append(key)
             elif default_scrapy_settings.get(key) != value and self.include_setting(key):
-                self.spider_settings[key] = value
+                if self._is_serializable(value):
+                    self.spider_settings[key] = value
+                else:
+                    non_serializable_settings.append(key)
+        
+        # Log warning about non-serializable settings
+        if non_serializable_settings:
+            logger.warning(
+                f"ScrapeOps: Excluded {len(non_serializable_settings)} non-serializable settings from monitoring: "
+                f"{', '.join(non_serializable_settings)}. "
+                f"These settings contain functions or other objects that cannot be sent to ScrapeOps. "
+                f"To suppress this warning, add these setting names to SCRAPEOPS_SETTINGS_EXCLUSION_LIST in your settings.py file."
+            )
+
+    def _is_serializable(self, value):
+        """Check if a value can be JSON serialized."""
+        import json
+        try:
+            json.dumps(value)
+            return True
+        except (TypeError, ValueError):
+            return False
 
     def include_setting(self, key):
         exclusion_terms = ['API_KEY', 'APIKEY', 'SECRET_KEY', 'SECRETKEY', 'PASSWORD', 'CONNECTION_STRING']
