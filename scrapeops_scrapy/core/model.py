@@ -221,9 +221,9 @@ class SDKData(BaseSDKModel):
         self.spider_settings = {}
         for key, value in full_settings.items():
             if key not in default_scrapy_settings and self.include_setting(key):
-                self.spider_settings[key] = value
+                self.spider_settings[key] = self._serialize_setting_value(value)
             elif default_scrapy_settings.get(key) != value and self.include_setting(key):
-                self.spider_settings[key] = value
+                self.spider_settings[key] = self._serialize_setting_value(value)
 
     def include_setting(self, key):
         exclusion_terms = ['API_KEY', 'APIKEY', 'SECRET_KEY', 'SECRETKEY', 'PASSWORD', 'CONNECTION_STRING']
@@ -232,6 +232,19 @@ class SDKData(BaseSDKModel):
         for term in exclusion_terms:
             if term in key.upper(): return False 
         return True
+
+    def _serialize_setting_value(self, value):
+        """
+        Convert settings values to JSON-serialisable types to avoid setup payload failures                                                                   
+        """
+        import json
+        try:
+            json.dumps(value)
+            return value
+        except (TypeError, ValueError):
+            if isinstance(value, type):
+                return f"{value.__module__}.{value.__name__}"
+            return str(value)
 
     
     def get_job_name(self):
