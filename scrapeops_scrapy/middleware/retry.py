@@ -139,36 +139,40 @@ class RetryMiddleware:
                            ConnectionLost, TCPTimedOutError, ResponseFailed,
                            IOError, TunnelError)
 
-    def __init__(self, settings):
+    def __init__(self, crawler):
+        settings = crawler.settings
         if not settings.getbool('RETRY_ENABLED'):
             raise NotConfigured
+        self.crawler = crawler
         self.max_retry_times = settings.getint('RETRY_TIMES')
         self.retry_http_codes = set(int(x) for x in settings.getlist('RETRY_HTTP_CODES'))
         self.priority_adjust = settings.getint('RETRY_PRIORITY_ADJUST')
 
     @classmethod
     def from_crawler(cls, crawler):
-        return cls(crawler.settings)
+        return cls(crawler)
 
-    def process_response(self, request, response, spider):
-        spider.crawler.signals.send_catch_log(
-            signal=scrapeops_signals.scrapeops_response_recieved, 
-            request=request, 
-            response=response, 
+    def process_response(self, request, response, spider=None):
+        spider = spider or self.crawler.spider
+        self.crawler.signals.send_catch_log(
+            signal=scrapeops_signals.scrapeops_response_recieved,
+            request=request,
+            response=response,
             spider=spider)
 
         if request.meta.get('dont_retry', False):
             return response
         if response.status in self.retry_http_codes:
             reason = response_status_message(response.status)
-            return self._retry(request, reason, spider) or response 
+            return self._retry(request, reason, spider) or response
         return response
 
-    def process_exception(self, request, exception, spider):
+    def process_exception(self, request, exception, spider=None):
+        spider = spider or self.crawler.spider
         ex_class = global_object_name(exception.__class__)
-        spider.crawler.signals.send_catch_log(
-            signal=scrapeops_signals.scrapeops_exception_recieved, 
-            request=request, 
+        self.crawler.signals.send_catch_log(
+            signal=scrapeops_signals.scrapeops_exception_recieved,
+            request=request,
             spider=spider,
             exception_class=ex_class)
 
