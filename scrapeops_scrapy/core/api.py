@@ -198,10 +198,13 @@ class SOPSRequest(object):
 
     @staticmethod
     def post(url, body=None, files=None, proxy=None):
+        import logging
+        logger = logging.getLogger(__name__)
+        
         proxies = None
         if ProxyNormalizer.unknown_proxy_scheme(proxy) is not True:
             proxies = {ProxyNormalizer.get_proxy_scheme(proxy): proxy}
-        for _ in range(SOPSRequest.RETRY_LIMIT):
+        for attempt in range(SOPSRequest.RETRY_LIMIT):
             try:
                 response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files, proxies=proxies, headers={'api_key': SOPSRequest.API_KEY}) 
                 if response.status_code == 401:
@@ -212,13 +215,26 @@ class SOPSRequest(object):
                 else:
                     time.sleep(3)
                     raise ScrapeOpsAPIResponseError
+            except (TypeError, ValueError) as json_error:
+                # These are JSON serialization errors - don't retry, log and return immediately
+                logger.error(
+                    "ScrapeOps: Unable to send monitoring data due to non-serializable settings. "
+                    "Some of your Scrapy settings contain functions or other objects that cannot be "
+                    "converted to JSON format. To resolve this, add the problematic setting names "
+                    "to SCRAPEOPS_SETTINGS_EXCLUSION_LIST in your settings.py file. "
+                    f"Error details: {json_error}"
+                )
+                error = json_error
+                return None, str(error)  # Don't retry on serialization errors
             except requests.exceptions.ConnectionError as e:
+                logger.warning(f"ScrapeOps: Connection error (attempt {attempt+1}): {e}")
                 error = e
                 continue
             except ScrapeOpsAPIResponseError as e:
                 error = e
                 continue
             except Exception as e:
+                logger.error(f"ScrapeOps: Unexpected error (attempt {attempt+1}): {e}")
                 error = e
                 continue
         return None, str(error)
