@@ -262,6 +262,19 @@ class SDKData(BaseSDKModel):
             if term in key.upper(): return False 
         return True
 
+    def _serialize_setting_value(self, value):
+        """
+        Convert settings values to JSON-serialisable types to avoid setup payload failures                                                                   
+        """
+        import json
+        try:
+            json.dumps(value)
+            return value
+        except (TypeError, ValueError):
+            if isinstance(value, type):
+                return f"{value.__module__}.{value.__name__}"
+            return str(value)
+
     
     def get_job_name(self):
         ## check args
