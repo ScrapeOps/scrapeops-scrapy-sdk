@@ -1,8 +1,12 @@
 from scrapeops_scrapy.exceptions import ScrapeOpsAPIResponseError
 from scrapeops_scrapy.utils.utils import merge_dicts
 from scrapeops_scrapy.normalizer.proxies import ProxyNormalizer
+import json
+import logging
 import requests
 import time
+
+logger = logging.getLogger(__name__)
 
     
 class SOPSRequest(object):
@@ -198,15 +202,13 @@ class SOPSRequest(object):
 
     @staticmethod
     def post(url, body=None, files=None, proxy=None):
-        import logging
-        logger = logging.getLogger(__name__)
-        
         proxies = None
         if ProxyNormalizer.unknown_proxy_scheme(proxy) is not True:
             proxies = {ProxyNormalizer.get_proxy_scheme(proxy): proxy}
+        error = None
         for attempt in range(SOPSRequest.RETRY_LIMIT):
             try:
-                response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files, proxies=proxies, headers={'api_key': SOPSRequest.API_KEY}) 
+                response = requests.post(url, json=body, timeout=SOPSRequest.TIMEOUT, files=files, proxies=proxies, headers={'api_key': SOPSRequest.API_KEY})
                 if response.status_code == 401:
                     return None, 'invalid_api_key'
                 if response.status_code == 200:
@@ -215,8 +217,14 @@ class SOPSRequest(object):
                 else:
                     time.sleep(3)
                     raise ScrapeOpsAPIResponseError
+            except json.JSONDecodeError as e:
+                # Malformed JSON in the response body - retryable, treat like a transient API issue.
+                # Must come before (TypeError, ValueError) since JSONDecodeError subclasses ValueError.
+                logger.exception(f"ScrapeOps: Failed to decode JSON response (attempt {attempt+1})")
+                error = e
+                continue
             except (TypeError, ValueError) as json_error:
-                # These are JSON serialization errors - don't retry, log and return immediately
+                # Payload serialization failure in requests.post(json=body) - not retryable.
                 logger.error(
                     "ScrapeOps: Unable to send monitoring data due to non-serializable settings. "
                     "Some of your Scrapy settings contain functions or other objects that cannot be "
@@ -224,8 +232,11 @@ class SOPSRequest(object):
                     "to SCRAPEOPS_SETTINGS_EXCLUSION_LIST in your settings.py file. "
                     f"Error details: {json_error}"
                 )
-                error = json_error
-                return None, str(error)  # Don't retry on serialization errors
+                return None, str(json_error)
+            except requests.Timeout as e:
+                logger.warning(f"ScrapeOps: Request timed out (attempt {attempt+1}): {e}")
+                error = e
+                continue
             except requests.exceptions.ConnectionError as e:
                 logger.warning(f"ScrapeOps: Connection error (attempt {attempt+1}): {e}")
                 error = e
@@ -233,8 +244,8 @@ class SOPSRequest(object):
             except ScrapeOpsAPIResponseError as e:
                 error = e
                 continue
-            except Exception as e:
-                logger.error(f"ScrapeOps: Unexpected error (attempt {attempt+1}): {e}")
+            except requests.RequestException as e:
+                logger.exception(f"ScrapeOps: Request error (attempt {attempt+1})")
                 error = e
                 continue
         return None, str(error)
